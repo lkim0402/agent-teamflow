@@ -8,6 +8,11 @@ All notable changes to agent-teamflow are documented here. Format based on [Keep
 - `/teamflow-help` — prints a static digest of all installed agent-teamflow slash commands. Useful for teammates who just ran the installer and want to see what they got.
 - Troubleshooting and FAQ sections in `SETUP.md` covering the most likely onboarding failures (auth, missing branches, branch protection, monorepos, GHE, trunk-based dev).
 
+### Changed
+- **Vendor install is now the recommended path for teams.** README leads with vendoring agent-teamflow into the team repo (skills committed, everyone on the same version, new hires onboard automatically). Global install is documented as the alternative for solo evaluation and per-developer use.
+- README has a vendor-vs-global comparison table to help users pick.
+- SETUP.md reorganized: install paths first, with separate Updating/Uninstalling guidance for each mode.
+
 ## [0.1.0] - 2026-05-19
 
 Initial public release.

@@ -18,15 +18,45 @@ If you're a solo developer it still works (and there's a [solo example](examples
 
 ## Quick start
 
-**1. Install once on your machine** (clones to `~/.claude/skills/agent-teamflow/` and registers the slash commands user-scope, so they work in every repo):
+agent-teamflow installs two ways. **For a team that commits to the workflow, vendor it into your repo** — everyone gets the same version automatically. For solo evaluation or personal use across many repos, install globally instead.
+
+### Vendor into your repo (recommended for teams)
+
+From inside your team's repo root:
+
+```bash
+git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamflow-tmp \
+  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/skills .agent-teamflow-tmp/CLAUDE.md . \
+  && rm -rf .agent-teamflow-tmp
+```
+
+This adds `.claude/commands/`, `skills/`, and `CLAUDE.md` to your repo. Review what was copied, then commit:
+
+```bash
+git add .claude skills CLAUDE.md && git commit -m "add agent-teamflow"
+```
+
+Now anyone who clones this repo gets the slash commands automatically through Claude Code's project-scope discovery. New hires onboard on day 1. Version drift disappears.
+
+> **Already have a `.claude/` directory** with your own custom commands? `cp -r` will merge — inspect the result before committing.
+>
+> **Want to merge `CLAUDE.md`** with an existing one? After the copy, manually combine the two and delete the conflict.
+
+In Claude Code, run `/teamflow-init` to write `.agent-teamflow` (your team's config). Then commit that too.
+
+### Install globally (alternative — for trying it out)
+
+One install on your machine; slash commands work in every repo:
 
 ```bash
 git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.claude/skills/agent-teamflow && ~/.claude/skills/agent-teamflow/setup
 ```
 
-**2. In any team repo, run `/teamflow-init`** in Claude Code. It detects your remote, asks four short questions, writes `.agent-teamflow`, and (with your approval) creates personal integration branches on origin.
+Each developer installs separately and updates independently (via `/teamflow-update`). Behavior is still configured per-repo via `.agent-teamflow`.
 
-**3. Try one of the workflow commands:**
+### Then run a workflow command
+
+Either install path, the workflow is the same:
 
 ```
 /issue       file a single branch-sized issue from a one-line brain dump
@@ -34,7 +64,17 @@ git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.claude/ski
 /resolve     pick up issues assigned to you and implement them in parallel forks
 ```
 
-That's it. Each teammate runs the install once. After that, agents from any of them stay out of each other's way.
+### Vendor vs. global — which?
+
+|  | Vendor (project-scope) | Global (user-scope) |
+|---|---|---|
+| Versions | Everyone on the team uses the same one (whatever's committed) | Each developer installs and updates independently |
+| Onboarding | New hires get it on day 1 | New hires have to install themselves |
+| Discoverability | `.claude/commands/` is visible in the repo | Nothing in the repo says "we use this" |
+| Repo footprint | Adds ~12 files + 1 config | Just `.agent-teamflow` |
+| Updates | Re-vendor when you want to pull upstream changes | `/teamflow-update` per developer |
+
+Both modes use the same skills and the same config schema. Start with whichever fits, switch later if needed.
 
 ## See it work
 
@@ -114,9 +154,9 @@ If your team calls things differently — `develop` instead of `staging`, `maste
 
 The actual skill logic lives in `skills/` — plain markdown runbooks any agent can read. `.claude/commands/` and the user-scope commands installed by `setup` are thin wrappers that point Claude Code at those runbooks. Other agents (Codex, etc.) can read `skills/` directly, or get their own adapter folder.
 
-## Manual setup
+## Setup, troubleshooting, FAQ
 
-If you don't want to use the global installer (vendoring into the repo, customizing the install path, etc.), see [SETUP.md](SETUP.md).
+For the full config reference, both install paths in depth, common failure modes, and FAQ, see [SETUP.md](SETUP.md).
 
 ## Contributing
 

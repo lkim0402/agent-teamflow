@@ -1,18 +1,52 @@
 # Setup
 
-The fast path is in the [README's Quick start](README.md#quick-start) — one paste to install, then `/teamflow-init` per repo. This doc covers the manual path (for vendoring into the repo, customizing paths, or working without the installer) plus the full config reference.
+The fast path is in the [README's Quick start](README.md#quick-start). This doc covers both install paths in more depth and is the full config reference.
 
-## Manual install (vendor into the repo)
+## Install paths
 
-Use this if you want the skills checked into the repo itself rather than the user-scope install.
+### Vendor into the repo (recommended for teams)
+
+Skills are committed to your team's repo. Everyone gets the same version automatically; new hires onboard with no extra steps.
+
+From inside your team's repo root:
 
 ```bash
-cp -r .claude your-repo/
-cp -r skills your-repo/
-cp CLAUDE.md your-repo/CLAUDE.md   # or append to your existing CLAUDE.md
+git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamflow-tmp \
+  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/skills .agent-teamflow-tmp/CLAUDE.md . \
+  && rm -rf .agent-teamflow-tmp
 ```
 
-Each teammate using Claude Code in that repo will pick up the project-scope slash commands automatically.
+Review the added files (`.claude/commands/`, `skills/`, `CLAUDE.md`) and commit them. Claude Code's project-scope discovery picks up the slash commands automatically for anyone who has the repo checked out.
+
+**Updating in vendor mode.** There's no `/teamflow-update` for this path — re-vendor by running the install command again (it overwrites the same three paths). Diff the changes against your committed copy, then commit the diff.
+
+**Conflict notes.** If your repo already has a `.claude/` directory or a `CLAUDE.md`, `cp -r` will merge / overwrite. Inspect before committing. To preserve your existing `CLAUDE.md`, do the copy, then `git diff CLAUDE.md` and reconcile manually.
+
+### Global install (alternative)
+
+Slash commands installed user-scope at `~/.claude/commands/`, working in every repo on your machine. Each developer installs and updates independently.
+
+```bash
+git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.claude/skills/agent-teamflow && ~/.claude/skills/agent-teamflow/setup
+```
+
+The `setup` script generates user-scope wrappers in `~/.claude/commands/`, rewriting relative paths to absolute paths so the commands work from any repo.
+
+**Updating.** Run `/teamflow-update` from Claude Code — it pulls the latest agent-teamflow and re-runs setup. Or manually: `cd ~/.claude/skills/agent-teamflow && git pull && ./setup`.
+
+### Choosing between them
+
+Vendor wins when:
+- You have a team and want everyone on the same version.
+- You want new hires to get the workflow with no separate install step.
+- You want skills visible in the repo as documentation.
+
+Global wins when:
+- You're evaluating agent-teamflow before committing to it.
+- You want one tool across many repos on your machine.
+- Your team isn't ready to commit shared `.claude/` files to the repo.
+
+Both modes use the same skills and the same `.agent-teamflow` config. You can switch later — to migrate from global to vendor, run the vendor install in your team's repo and commit. To migrate from vendor to global, remove the committed files and run the global installer.
 
 ## `.agent-teamflow` config reference
 
@@ -115,7 +149,29 @@ git config user.email
 
 If you're using `owners`, the local part of your email (before `@`) must match a key in the map. `alice@company.com` → looks up `alice`.
 
-## Directory layout after auto-install
+## Directory layout
+
+### After vendor install (in your team's repo)
+
+```
+your-repo/
+├── .agent-teamflow            ← team config
+├── CLAUDE.md                  ← tells Claude to read .agent-teamflow before any skill
+├── skills/                    ← runbooks (source of truth)
+│   ├── teamflow-init.md
+│   ├── resolve.md
+│   └── ...
+├── .claude/
+│   └── commands/              ← project-scope wrappers (one per skill)
+│       ├── teamflow-init.md
+│       ├── resolve.md
+│       └── ...
+└── ... your project files
+```
+
+Claude Code picks up `.claude/commands/*.md` automatically when run from inside the repo.
+
+### After global install
 
 ```
 ~/.claude/
@@ -137,20 +193,20 @@ Each user-scope command in `~/.claude/commands/` is a one-liner that points Clau
 
 ## Updating
 
-```bash
-cd ~/.claude/skills/agent-teamflow && git pull && ./setup
-```
+**Vendor install** — re-run the vendor install command from the team repo root. It overwrites `.claude/commands/`, `skills/`, and `CLAUDE.md` with the latest from `main`. Diff against your committed copy and commit the changes.
 
-`setup` is idempotent — re-running regenerates the user-scope commands from the latest source.
+**Global install** — `/teamflow-update` does the work. Or manually: `cd ~/.claude/skills/agent-teamflow && git pull && ./setup`. `setup` is idempotent — re-running regenerates the user-scope commands from the latest source.
 
 ## Uninstalling
 
-The final lines of `setup`'s output print the exact commands to remove everything it installed. Run those, then delete `.agent-teamflow` from any repo where you configured it.
+**Vendor install** — remove `.claude/commands/`, `skills/`, `CLAUDE.md`, and `.agent-teamflow` from the repo. Commit the deletion.
+
+**Global install** — the final lines of `setup`'s output print the exact commands to remove everything it installed. Run those, then delete `.agent-teamflow` from any repo where you configured it.
 
 ## Troubleshooting
 
 **Slash commands don't appear after install.**
-Restart Claude Code (close and reopen). It scans `~/.claude/commands/` on startup. Confirm files exist there: `ls ~/.claude/commands/teamflow-*.md` should list at least `teamflow-init.md`, `teamflow-update.md`, `teamflow-help.md`.
+Restart Claude Code (close and reopen). It scans `.claude/commands/` (project-scope, vendor install) and `~/.claude/commands/` (user-scope, global install) on startup. After a vendor install, confirm `ls .claude/commands/teamflow-*.md` from your repo root lists the wrappers. After a global install, confirm `ls ~/.claude/commands/teamflow-*.md`.
 
 **`/issue` or `/dispatch` fails with an auth error.**
 The issue tracker CLI isn't logged in. Run `gh auth status` (or `glab auth status`) — if it reports "not logged in", run `gh auth login` / `glab auth login` and retry. For GitHub Enterprise or self-hosted GitLab, also set the host (`GH_HOST=ghe.example.com gh auth login` or `glab auth login --hostname gitlab.example.com`).
@@ -194,7 +250,7 @@ Fine. They use git as normal; the skills are just helpful automation for whoever
 `.agent-teamflow` is meant to be committed — it's per-repo shared config. The `owners` map is the source of routing, not a per-developer secret. If a teammate's email local part isn't in `owners`, they fall back to `staging` with a warning, which is the right behavior.
 
 **What if I want to skip the global install and just vendor agent-teamflow into one repo?**
-See [Manual install](#manual-install-vendor-into-the-repo) at the top of this file. Copy `skills/`, `.claude/commands/`, and `CLAUDE.md` into your repo and commit them. Slash commands become project-scope instead of user-scope.
+That's the recommended path for teams. See [Vendor into the repo](#vendor-into-the-repo-recommended-for-teams) at the top of this file.
 
 **Where do I report a bug or request a feature?**
 [github.com/lkim0402/agent-teamflow/issues](https://github.com/lkim0402/agent-teamflow/issues). See [CONTRIBUTING.md](CONTRIBUTING.md) for the conventions around adding new skills.
