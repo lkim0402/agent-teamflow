@@ -8,13 +8,19 @@
 
 # agent-teamflow
 
-**Coordination layer for AI coding agents in a team repo.** Multiple developers, multiple agents, one shared codebase — without stepping on each other.
+**Claude Code slash commands that let a team's AI agents work in parallel on the same repo without colliding.**
 
-Most agent tooling assumes one person at a keyboard. agent-teamflow assumes **N** — Alice and Bob and Carol all using Claude Code at the same time, on the same repo, on the same day. The skills here are the protocol that keeps their work from colliding.
+When Alice and Bob both run `/resolve` at the same time on different issues, they need to file separate issues, push to separate branches, and merge cleanly into shared staging — without coordinating manually. agent-teamflow is the convention that makes that work.
 
-If you're a solo developer it still works (and there's a [solo example](examples/solo/)) — but if you're solo, you don't need it. The pitch is the team case.
+It's three pieces:
 
-> **Why this exists.** Most agent tooling supercharges one person's workflow. agent-teamflow sits at a different layer: it's the *coordination protocol* for a team where each member is already using AI agents. It assumes 2+ developers, the same repo, work happening in parallel, and answers the question "how do we keep our agents from clobbering each other's work?" The answer is a tiny config file, personal integration branches, and a handful of skills that read both.
+- **A config file** (`.agent-teamflow`) at the repo root, describing your issue tracker, branches, and per-developer integration lanes.
+- **A branching convention** — `feature → personal lane (optional) → shared staging → main`.
+- **Nine slash commands** — `/issue`, `/dispatch`, `/resolve`, `/git-auto-merge`, `/post-merge`, `/prod-check` for the workflow, plus setup helpers `/teamflow-init`, `/teamflow-update`, `/teamflow-help`.
+
+Most agent tooling supercharges one developer. agent-teamflow is the team layer — built for 2+ developers running agents in parallel against the same codebase.
+
+If you're solo it still works (see [`examples/solo/`](examples/solo/)), but you probably don't need it.
 
 ## Quick start
 
