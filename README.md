@@ -14,20 +14,7 @@ Most agent tooling assumes one person at a keyboard. agent-teamflow assumes **N*
 
 If you're a solo developer it still works (and there's a [solo example](examples/solo/)) — but if you're solo, you don't need it. The pitch is the team case.
 
-> **Why this exists.** Tools like gstack supercharge one person's workflow. Claude Code's built-in skills are general-purpose primitives. agent-teamflow sits at a different layer: it's the *coordination protocol* for a team where each member is already using AI agents. It assumes 2+ developers, the same repo, work happening in parallel, and answers the question "how do we keep our agents from clobbering each other's work?" The answer is a tiny config file, personal integration branches, and a handful of skills that read both.
-
-## Where this sits
-
-agent-teamflow lives in the gap between solo-developer skill libraries and general-purpose primitives. The point is *team coordination*, not specialist roles or agent generation.
-
-| Project | Niche | Audience |
-|---|---|---|
-| **agent-teamflow** (this repo) | Coordination protocol for multiple developers running agents on the same repo | Teams of 2+ |
-| [gstack](https://github.com/garrytan/gstack) | One developer's "virtual eng team" via specialist roles (CEO, Designer, Eng Manager, QA...) | Solo founders, technical CEOs |
-| [harness](https://github.com/revfactory/harness) | Generates agent team architectures from a domain description | Anyone building a new agent team |
-| Claude Code built-in skills | General-purpose, domain-agnostic primitives | Everyone |
-
-Different layers, not competitors — you can run agent-teamflow *alongside* gstack or harness in the same repo.
+> **Why this exists.** Most agent tooling supercharges one person's workflow. agent-teamflow sits at a different layer: it's the *coordination protocol* for a team where each member is already using AI agents. It assumes 2+ developers, the same repo, work happening in parallel, and answers the question "how do we keep our agents from clobbering each other's work?" The answer is a tiny config file, personal integration branches, and a handful of skills that read both.
 
 ## Quick start
 
