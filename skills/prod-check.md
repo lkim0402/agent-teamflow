@@ -4,6 +4,8 @@ Pre-production high-stakes code review scoped to today's work (or an explicit ra
 
 Use when asked to "prod check", "production review", "is this safe to ship", or before merging to staging or main.
 
+Run as a **forked agent** — call Agent without `subagent_type` so diff output and grep results stay out of the main conversation. Report only the final findings table (or `READY FOR PROD`) to the user.
+
 ---
 
 ## Core principle: impact over implementation
