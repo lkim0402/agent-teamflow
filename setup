@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# agent-teamflow setup
+# Installs the slash commands into Claude Code's user-scope commands directory
+# so they work in any repo, configured per-project via .agent-teamflow.
+
+set -euo pipefail
+
+INSTALL_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+USER_COMMANDS_DIR="$HOME/.claude/commands"
+
+if [[ ! -d "$INSTALL_DIR/.claude/commands" ]] || [[ ! -d "$INSTALL_DIR/skills" ]]; then
+    echo "Error: setup must be run from inside the agent-teamflow repo." >&2
+    echo "  expected: $INSTALL_DIR/.claude/commands and $INSTALL_DIR/skills" >&2
+    exit 1
+fi
+
+mkdir -p "$USER_COMMANDS_DIR"
+
+count=0
+for cmd_file in "$INSTALL_DIR/.claude/commands/"*.md; do
+    [[ -f "$cmd_file" ]] || continue
+    name=$(basename "$cmd_file")
+    output="$USER_COMMANDS_DIR/$name"
+
+    # Rewrite the project-scope command's relative paths to absolute paths
+    # pointing at this install location, so the command works from any repo.
+    sed \
+        -e "s|\`CLAUDE.md\`|\`$INSTALL_DIR/CLAUDE.md\`|g" \
+        -e "s|\`skills/|\`$INSTALL_DIR/skills/|g" \
+        "$cmd_file" > "$output"
+
+    count=$((count + 1))
+done
+
+echo "Installed $count agent-teamflow slash commands into $USER_COMMANDS_DIR/"
+echo ""
+echo "Next steps:"
+echo "  1. Open Claude Code inside any repo you want to use this in."
+echo "  2. Run /teamflow-init to configure that repo (writes .agent-teamflow)."
+echo "  3. Then try /issue, /dispatch, or /resolve."
+echo ""
+echo "Update later: cd $INSTALL_DIR && git pull && ./setup"
+echo "Uninstall:    rm $USER_COMMANDS_DIR/{$(ls "$INSTALL_DIR/.claude/commands/" | sed 's/\.md$//' | paste -sd',' -)}.md && rm -rf $INSTALL_DIR"
