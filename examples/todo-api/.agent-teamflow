@@ -1,0 +1,12 @@
+{
+  "issueTracker": "github",
+  "project": "your-username/todo-api",
+  "branches": {
+    "main": "main",
+    "staging": "staging"
+  },
+  "owners": {
+    "alice": "alice-staging",
+    "bob": "bob-staging"
+  }
+}

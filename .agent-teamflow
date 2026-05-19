@@ -1,0 +1,12 @@
+{
+  "issueTracker": "gitlab",
+  "project": "myorg/myrepo",
+  "branches": {
+    "main": "master",
+    "staging": "staging"
+  },
+  "owners": {
+    "alice": "alice-staging",
+    "bob": "bob-staging"
+  }
+}
