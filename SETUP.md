@@ -14,12 +14,11 @@ git push origin bob-staging
 
 These sit between feature branches and the shared `staging` branch.
 
-## 2. Copy the adapter into your repo
+## 2. Copy the skills into your repo
 
 ```bash
-# copy the Claude adapter
-cp -r adapters/claude/.claude your-repo/
-cp -r adapters/claude/CLAUDE.md your-repo/CLAUDE.md   # or append to existing
+cp -r .claude your-repo/
+cp CLAUDE.md your-repo/CLAUDE.md   # or append to your existing CLAUDE.md
 ```
 
 Or symlink if you want to track updates from this repo.
@@ -81,7 +80,7 @@ your-repo/
 ├── .agent-teamflow          ← team config
 ├── CLAUDE.md                ← tells Claude to read config before any skill
 ├── .claude/
-│   └── commands/            ← slash commands (from adapters/claude/commands/)
+│   └── commands/            ← slash commands
 │       ├── resolve.md
 │       ├── git-auto-merge.md
 │       ├── post-merge.md
@@ -93,4 +92,4 @@ your-repo/
 
 ## Updating skills
 
-Skills live in `skills/`. Edit them to fit your team's conventions — rename labels, adjust the model assignment rules in `/resolve`, add project-specific checklist items to `/prod-check`. The adapter commands just delegate to `skills/`, so changes there take effect immediately.
+Skills live in `.claude/commands/`. Edit them to fit your team's conventions — rename labels, adjust the model assignment rules in `/resolve`, add project-specific checklist items to `/prod-check`.

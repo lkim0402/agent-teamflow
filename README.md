@@ -27,7 +27,7 @@ feature branches → <owner>-staging → staging → main
 
 ## Compatibility
 
-Skills are written as agent-readable markdown runbooks. The `adapters/claude/` layer wires them to Claude Code's slash commands. Other agent runtimes can read the `skills/` runbooks directly or get their own adapter.
+Skills are written as agent-readable markdown runbooks in `.claude/commands/`. Claude Code picks them up as slash commands automatically. Other agent runtimes can read the same files directly.
 
 ## Quick start
 

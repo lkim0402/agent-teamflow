@@ -1,26 +1,20 @@
-# agent-teamflow — Claude adapter
+# agent-teamflow
 
 ## Before every skill
 
-Read `.agent-teamflow` from the repo root before running any skill. It provides:
+Read `.agent-teamflow` from the repo root before running any slash command. It provides:
 
 - `issueTracker` — `"gitlab"` or `"github"`. Use `glab` for GitLab, `gh` for GitHub.
 - `project` — the issue tracker project path (e.g. `myorg/myrepo`). Pass as `--repo` when needed.
-- `branches.main` — production branch name (e.g. `master`).
+- `branches.main` — production branch name (e.g. `master` or `main`).
 - `branches.staging` — QA/integration target branch (e.g. `staging`).
 - `owners` — map of git username shorthand → their personal integration branch (e.g. `{ "alice": "alice-staging" }`).
 
 ## Owner resolution (used by multiple skills)
 
-To resolve the current owner's integration branch:
-
 1. Run `git config user.email`, strip the domain to get the local part (e.g. `alice@company.com` → `alice`).
 2. Look up that value in `owners`. If found, check if `origin/<value>` exists via `git ls-remote --exit-code --heads origin <branch>`. If it exists, use it as `<INTEGRATION_BRANCH>`.
-3. If not found or branch doesn't exist on origin, fall back to `branches.staging` as the integration branch and warn the user.
-
-## Context docs
-
-Your project may have per-area context documents (like `docs/` in this repo's examples). Before writing code, check your `CLAUDE.md` for a routing table of which docs to read for which area. If none exists, skip this step.
+3. If not found or branch doesn't exist on origin, fall back to `branches.staging` and warn the user.
 
 ## Issue tracker commands
 
@@ -32,3 +26,7 @@ Your project may have per-area context documents (like `docs/` in this repo's ex
 | List MRs/PRs | `glab mr list` | `gh pr list` |
 | Create MR/PR | `glab mr create` | `gh pr create` |
 | Update MR/PR | `glab mr update` | `gh pr edit` |
+
+## Context docs
+
+Your project may have per-area context documents. Check your `CLAUDE.md` for a routing table of which docs to read for which area. If none exists, skip this step.
