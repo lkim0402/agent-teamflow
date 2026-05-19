@@ -146,3 +146,55 @@ cd ~/.claude/skills/agent-teamflow && git pull && ./setup
 ## Uninstalling
 
 The final lines of `setup`'s output print the exact commands to remove everything it installed. Run those, then delete `.agent-teamflow` from any repo where you configured it.
+
+## Troubleshooting
+
+**Slash commands don't appear after install.**
+Restart Claude Code (close and reopen). It scans `~/.claude/commands/` on startup. Confirm files exist there: `ls ~/.claude/commands/teamflow-*.md` should list at least `teamflow-init.md`, `teamflow-update.md`, `teamflow-help.md`.
+
+**`/issue` or `/dispatch` fails with an auth error.**
+The issue tracker CLI isn't logged in. Run `gh auth status` (or `glab auth status`) — if it reports "not logged in", run `gh auth login` / `glab auth login` and retry. For GitHub Enterprise or self-hosted GitLab, also set the host (`GH_HOST=ghe.example.com gh auth login` or `glab auth login --hostname gitlab.example.com`).
+
+**Skills warn "falling back to staging" or "owner not found".**
+The local part of your `git config user.email` doesn't match any key in `owners`. Either rename your alias in `.agent-teamflow` (`/teamflow-init` and edit, or hand-edit the JSON), or set `git config user.email` to something matching an entry. Skills then resolve your personal lane correctly.
+
+**Skills warn "branch does not exist on origin".**
+Your personal integration branch was never created on the remote. Push it once: `git fetch origin staging && git push origin "origin/staging:refs/heads/<your-alias>-staging"`. Or rerun `/teamflow-init` and approve auto-creation in Step 7.
+
+**`/git-auto-merge` fails when pushing to `staging`.**
+Branch protection on `staging` blocks direct pushes. Two options: (a) update protection to allow your service account / bot, or (b) skip the auto-merge to `staging` and create a PR manually from `<your-alias>-staging` → `staging` via the GitHub/GitLab UI. The skill should still successfully push your feature branch and update your personal-lane MR/PR.
+
+**`/resolve` batch-merge stops on a conflict.**
+Two feature branches in the same batch touched the same file. The skill halts before pushing the conflicted result — your worktrees are intact. Resolve manually in the affected worktree, commit, then rerun `/git-auto-merge` from that worktree. Going forward, ensure `/issue` keeps "same file in same chunk" so siblings don't collide.
+
+**Setup fails on `bun` or `node` errors.**
+agent-teamflow doesn't use either. If you see those errors you're running gstack's setup by mistake. Re-clone agent-teamflow into a clean path: `git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.claude/skills/agent-teamflow`.
+
+## FAQ
+
+**Do I need this if I'm a solo developer?**
+No. The skills still work (see [`examples/solo/`](examples/solo/)), but the value prop is keeping multiple developers' agents from colliding. If it's just you, gstack or vanilla Claude Code skills will serve you better.
+
+**What if my team uses trunk-based development with no staging branch?**
+Set `branches.staging` to `main` (or your equivalent). Skills will merge features straight to `main`. The integration-branch buffer is optional — without `owners`, features go directly to the configured target.
+
+**What if our `main` is called `master` (or `production`, or `release`)?**
+Configure it that way. Skills never refer to branch names by string literal — they read `branches.main` and `branches.staging` from `.agent-teamflow`.
+
+**Does this work with GitHub Enterprise or self-hosted GitLab?**
+Yes. `gh` and `glab` both support custom hosts. Authenticate once (`GH_HOST=...` or `glab auth login --hostname ...`), and the skills' CLI calls inherit that config. No agent-teamflow setting is needed.
+
+**Can I use this in a monorepo?**
+Yes, but the config lives at the repo root only — one `.agent-teamflow` per repo, not per package. The branch-sizing rule in `/issue` becomes more important in a monorepo since touching multiple packages is common.
+
+**What if a teammate doesn't have Claude Code (or refuses to install)?**
+Fine. They use git as normal; the skills are just helpful automation for whoever has them. Their feature branches still merge into the shared staging the same way. Just don't put them in `owners` — that field is for people whose agents need a personal lane.
+
+**I committed `.agent-teamflow` and now teammates' agents are confused by my settings.**
+`.agent-teamflow` is meant to be committed — it's per-repo shared config. The `owners` map is the source of routing, not a per-developer secret. If a teammate's email local part isn't in `owners`, they fall back to `staging` with a warning, which is the right behavior.
+
+**What if I want to skip the global install and just vendor agent-teamflow into one repo?**
+See [Manual install](#manual-install-vendor-into-the-repo) at the top of this file. Copy `skills/`, `.claude/commands/`, and `CLAUDE.md` into your repo and commit them. Slash commands become project-scope instead of user-scope.
+
+**Where do I report a bug or request a feature?**
+[github.com/lkim0402/agent-teamflow/issues](https://github.com/lkim0402/agent-teamflow/issues). See [CONTRIBUTING.md](CONTRIBUTING.md) for the conventions around adding new skills.

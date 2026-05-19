@@ -4,6 +4,10 @@ All notable changes to agent-teamflow are documented here. Format based on [Keep
 
 ## [Unreleased]
 
+### Added
+- `/teamflow-help` — prints a static digest of all installed agent-teamflow slash commands. Useful for teammates who just ran the installer and want to see what they got.
+- Troubleshooting and FAQ sections in `SETUP.md` covering the most likely onboarding failures (auth, missing branches, branch protection, monorepos, GHE, trunk-based dev).
+
 ## [0.1.0] - 2026-05-19
 
 Initial public release.

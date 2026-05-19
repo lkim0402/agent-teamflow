@@ -85,6 +85,10 @@ If your skill reads new fields from `.agent-teamflow`, also try invoking the run
 
 Every user-visible change goes under the `## [Unreleased]` heading in `CHANGELOG.md`, grouped under `Added`, `Changed`, `Fixed`, or `Removed`. Don't bump the version in the same PR that adds the change — version bumps happen separately when a release is cut.
 
+## Keeping `/teamflow-help` in sync
+
+When you add a new slash command, update the static digest in `skills/teamflow-help.md` to include it. The digest is hand-maintained rather than auto-generated — keep it short and group your new command into the right section (Setup, Issue lifecycle, or Review).
+
 ## Commits and PRs
 
 - Branch off `main`. Keep commits small and one-purpose.

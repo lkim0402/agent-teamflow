@@ -79,12 +79,13 @@ Four feature branches, four parallel agents, two developers — zero coordinatio
 
 ## What you get
 
-Eight slash commands. Two are lifecycle (`/teamflow-init`, `/teamflow-update`); the others are the actual team workflow.
+Nine slash commands. Three are lifecycle (`/teamflow-init`, `/teamflow-update`, `/teamflow-help`); the others are the actual team workflow.
 
 | Command | What it does |
 |---|---|
 | `/teamflow-init` | Bootstrap the current repo — writes `.agent-teamflow`, optionally creates integration branches |
 | `/teamflow-update` | Pull the latest agent-teamflow and re-register slash commands |
+| `/teamflow-help` | Print this list of commands (useful for teammates who just installed) |
 | `/issue` | Turn a brain dump into branch-sized issues (sized to avoid merge conflicts) |
 | `/dispatch` | Split a brain dump across multiple teammates, file issues, write a workflow log |
 | `/resolve` | Pick open issues assigned to you, implement each in a parallel worktree, batch-merge when done |
