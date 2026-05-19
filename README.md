@@ -1,3 +1,11 @@
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/lkim0402/agent-teamflow" alt="License"></a>
+  <img src="https://img.shields.io/github/last-commit/lkim0402/agent-teamflow" alt="Last commit">
+  <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/claude_code-compatible-8A2BE2" alt="Claude Code">
+  <img src="https://img.shields.io/badge/team_size-2%2B-orange" alt="Team size 2+">
+</p>
+
 # agent-teamflow
 
 **Coordination layer for AI coding agents in a team repo.** Multiple developers, multiple agents, one shared codebase — without stepping on each other.
@@ -7,6 +15,19 @@ Most agent tooling assumes one person at a keyboard. agent-teamflow assumes **N*
 If you're a solo developer it still works (and there's a [solo example](examples/solo/)) — but if you're solo, you don't need it. The pitch is the team case.
 
 > **Why this exists.** Tools like gstack supercharge one person's workflow. Claude Code's built-in skills are general-purpose primitives. agent-teamflow sits at a different layer: it's the *coordination protocol* for a team where each member is already using AI agents. It assumes 2+ developers, the same repo, work happening in parallel, and answers the question "how do we keep our agents from clobbering each other's work?" The answer is a tiny config file, personal integration branches, and a handful of skills that read both.
+
+## Where this sits
+
+agent-teamflow lives in the gap between solo-developer skill libraries and general-purpose primitives. The point is *team coordination*, not specialist roles or agent generation.
+
+| Project | Niche | Audience |
+|---|---|---|
+| **agent-teamflow** (this repo) | Coordination protocol for multiple developers running agents on the same repo | Teams of 2+ |
+| [gstack](https://github.com/garrytan/gstack) | One developer's "virtual eng team" via specialist roles (CEO, Designer, Eng Manager, QA...) | Solo founders, technical CEOs |
+| [harness](https://github.com/revfactory/harness) | Generates agent team architectures from a domain description | Anyone building a new agent team |
+| Claude Code built-in skills | General-purpose, domain-agnostic primitives | Everyone |
+
+Different layers, not competitors — you can run agent-teamflow *alongside* gstack or harness in the same repo.
 
 ## Quick start
 
@@ -28,7 +49,9 @@ git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.claude/ski
 
 That's it. Each teammate runs the install once. After that, agents from any of them stay out of each other's way.
 
-### What this looks like in practice
+## See it work
+
+Two developers, two terminals, four parallel agents — same repo, no collisions:
 
 ```
 ┌─ alice@laptop ────────────────────────┐  ┌─ bob@laptop ──────────────────────────┐
