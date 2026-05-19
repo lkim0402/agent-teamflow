@@ -2,6 +2,8 @@
 
 This walks through a realistic session on the `todo-api` Express app with two developers — Alice and Bob — each running their own Claude Code agent in parallel.
 
+This example uses personal integration branches (`alice-staging`, `bob-staging`). That's one convention — not a requirement. See [SETUP.md](../../SETUP.md) for other branching models you can configure instead.
+
 ## Setup recap
 
 The repo has this `.agent-teamflow`:
@@ -9,7 +11,7 @@ The repo has this `.agent-teamflow`:
 ```json
 {
   "issueTracker": "github",
-  "project": "your-username/todo-api",
+  "project": "your-org/todo-api",
   "branches": {
     "main": "main",
     "staging": "staging"
@@ -31,7 +33,7 @@ feature/7-search-filter   ─┐                 │
 feature/8-pagination      ─┤→ bob-staging  ──┘
 ```
 
-Alice's git user email is `alice@company.com` — so her local part is `alice`, which maps to `alice-staging`. Bob's maps to `bob-staging`.
+Skills resolve each developer's lane from `git config user.email`. `alice@company.com` strips to `alice`, which maps to `alice-staging`. Bob's maps to `bob-staging`. Teams without personal lanes omit `owners` entirely and features merge straight to `staging`.
 
 ---
 

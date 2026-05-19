@@ -6,13 +6,23 @@ Most AI agent tooling is designed for one person. This is designed for teams —
 
 ## The core idea
 
-Each developer works in their own **lane**: a personal integration branch (`alice-staging`, `bob-staging`) that sits between their feature branches and the shared staging branch. Skills coordinate across lanes so agents can implement in parallel, merge cleanly, and hand off to humans at the right checkpoints.
+Skills read a single config file (`.agent-teamflow`) at the repo root and adapt to your branching model. You describe your branches and who owns what — the skills do the rest.
+
+The minimum setup is just two branches:
 
 ```
-feature branches → <owner>-staging → staging → main
-                       ↑
-               alice-staging, bob-staging, ...
+feature branches → staging → main
 ```
+
+If your team uses personal integration branches, add them to `owners` and the skills route accordingly:
+
+```
+feature branches → alice-staging ─┐
+                                   ├→ staging → main
+feature branches → bob-staging   ─┘
+```
+
+If your team calls things differently — `develop` instead of `staging`, `master` instead of `main`, `alice/integration` instead of `alice-staging` — you just configure those names. The skills don't care what the branches are called.
 
 ## What's included
 
