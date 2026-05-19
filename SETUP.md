@@ -49,13 +49,15 @@ Skills resolve the current developer from `git config user.email` (local part be
 
 ### Field reference
 
-| Field | Required | What it does |
-|---|---|---|
-| `issueTracker` | yes | `"gitlab"` or `"github"` — determines which CLI (`glab`/`gh`) skills use |
-| `project` | yes | Repo path passed to `--repo` flags |
-| `branches.main` | yes | Production branch (skills never push here directly) |
-| `branches.staging` | yes | Default merge target — where MRs/PRs point |
-| `owners` | no | Map of git username shorthand → personal integration branch name |
+| Field | Required | Default | What it does |
+|---|---|---|---|
+| `issueTracker` | yes | — | `"gitlab"` or `"github"` — determines which CLI (`glab`/`gh`) skills use |
+| `project` | yes | — | Repo path passed to `--repo` flags |
+| `branches.main` | yes | — | Production branch (skills never push here directly) |
+| `branches.staging` | yes | — | Default merge target — where MRs/PRs point |
+| `owners` | no | — | Map of git username shorthand → personal integration branch name |
+| `labels.doneInStaging` | no | `done-in-staging` | Label `/post-merge` applies to issues whose code has reached staging |
+| `paths.workflowDir` | no | `docs/workflow` | Directory `/dispatch` writes workflow log files into |
 
 ## 3. Adapting to your branching model
 

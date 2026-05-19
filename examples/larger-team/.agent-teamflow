@@ -1,0 +1,8 @@
+{
+  "issueTracker": "github",
+  "project": "your-org/your-repo",
+  "branches": {
+    "main": "main",
+    "staging": "staging"
+  }
+}

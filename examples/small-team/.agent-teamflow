@@ -1,6 +1,6 @@
 {
   "issueTracker": "github",
-  "project": "your-username/todo-api",
+  "project": "your-org/your-repo",
   "branches": {
     "main": "main",
     "staging": "staging"

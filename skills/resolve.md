@@ -86,7 +86,7 @@ gh issue list --assignee @me --json number,title,url,labels,body
 
 Parse the JSON. Capture `id/number`, `title`, `url`, `labels`, and the first 200 chars of `body` per issue.
 
-**Filter out** any issue whose `labels` array contains `done-in-staging` (or your equivalent "already shipped" label). Those are waiting for the staging→main flow and have no remaining work.
+**Filter out** any issue whose `labels` array contains the `labels.doneInStaging` value from `.agent-teamflow` (default `done-in-staging`). Those are waiting for the staging→main flow and have no remaining work.
 
 Sort remaining issues by id ascending.
 

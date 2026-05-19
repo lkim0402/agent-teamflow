@@ -45,4 +45,8 @@ See [SETUP.md](SETUP.md).
 
 ## Examples
 
-[`examples/todo-api/`](examples/todo-api/) — a minimal Express app showing the scaffold in action.
+[`examples/`](examples/) — three narrative walkthroughs showing the scaffold under different team setups:
+
+- [`solo/`](examples/solo/) — one developer, no personal lanes, features land on `staging` directly.
+- [`small-team/`](examples/small-team/) — two developers with personal integration branches, parallel `/resolve` runs.
+- [`larger-team/`](examples/larger-team/) — four developers sharing one `staging` branch, no personal lanes.

@@ -12,7 +12,7 @@ You are distributing today's work across multiple team members. The user gives y
 
 ## Setup
 
-Read `.agent-teamflow` from the repo root. Extract `issueTracker`, `project`, and `owners`.
+Read `.agent-teamflow` from the repo root. Extract `issueTracker`, `project`, `owners`, and `paths.workflowDir` (default `docs/workflow` if missing) — refer to it as `<WORKFLOW_DIR>` below.
 
 The `owners` map keys are the assignee aliases (e.g. `"alice"`, `"bob"`). Values are their integration branch names — but for dispatch, you primarily need the keys as assignee identifiers.
 
@@ -44,9 +44,9 @@ If the project has per-area context docs, read the ones relevant to each task be
 
 ### 3. Write the workflow file
 
-Path: `docs/workflow/workflow-<YYYYMMDD-HHMM>.md` (use local time: `date +%Y%m%d-%H%M`).
+Path: `<WORKFLOW_DIR>/workflow-<YYYYMMDD-HHMM>.md` (use local time: `date +%Y%m%d-%H%M`).
 
-Create `docs/workflow/` if it doesn't exist.
+Create `<WORKFLOW_DIR>/` if it doesn't exist.
 
 Structure:
 
@@ -108,7 +108,7 @@ After all issues are created, edit the workflow file and fill in the `Issue:` li
 ### 6. Commit and push
 
 ```bash
-git add docs/workflow/workflow-<timestamp>.md
+git add <WORKFLOW_DIR>/workflow-<timestamp>.md
 git commit -m "chore(workflow): dispatch <YYYY-MM-DD> tasks"
 git push origin HEAD
 ```

@@ -1,8 +1,10 @@
 # post-merge
 
-After merging an integration→staging MR/PR, label its linked issues with `done-in-staging` so the issue tracker shows the work has reached staging. Issues stay open until staging→main triggers the tracker's native auto-close.
+After merging an integration→staging MR/PR, label its linked issues with the configured "done in staging" label so the issue tracker shows the work has reached staging. Issues stay open until staging→main triggers the tracker's native auto-close.
 
 Run as a **forked agent** — call Agent without `subagent_type` so CLI output stays out of the main conversation. Report only the final summary.
+
+The label name is read from `.agent-teamflow` at `labels.doneInStaging`. If unset, default to the string `done-in-staging`. All references to `<DONE_LABEL>` below resolve to that value.
 
 ---
 
@@ -18,7 +20,7 @@ Only `merged` is acceptable. Run this **after** you manually merge in the UI.
 
 1. Find the merged MR/PR to operate on.
 2. Parse `Closes #<id>` references from its description.
-3. Ensure the `done-in-staging` label exists in the project (create if missing).
+3. Ensure the `<DONE_LABEL>` label exists in the project (create if missing).
 4. Add the label to each linked issue. Idempotent — re-running is safe.
 5. Stop. Does NOT close issues. Does NOT merge anything. Does NOT touch branches.
 
@@ -30,11 +32,11 @@ Only `merged` is acceptable. Run this **after** you manually merge in the UI.
 
 ## Setup
 
-Read `.agent-teamflow` from the repo root. Extract `issueTracker`, `project`, `branches`, and `owners`. Resolve `<INTEGRATION_BRANCH>` using the same owner-resolution logic as `git-auto-merge` Step 0.
+Read `.agent-teamflow` from the repo root. Extract `issueTracker`, `project`, `branches`, `owners`, and `labels.doneInStaging` (default `done-in-staging` if missing) — refer to it as `<DONE_LABEL>` below. Resolve `<INTEGRATION_BRANCH>` using the same owner-resolution logic as `git-auto-merge` Step 0.
 
 ## Label spec
 
-- **Name:** `done-in-staging`
+- **Name:** `<DONE_LABEL>`
 - **Color:** `#36cd96` (green)
 - **Description:** `MR/PR resolving this issue has been merged into staging. Will auto-close when staging → main flows.`
 
@@ -42,16 +44,16 @@ Check existence first, only create if missing:
 
 ```bash
 # GitLab
-glab api projects/<encoded-project>/labels | grep -q "done-in-staging" || \
+glab api projects/<encoded-project>/labels | grep -q "<DONE_LABEL>" || \
 glab api projects/<encoded-project>/labels --method POST \
-  -f "name=done-in-staging" \
+  -f "name=<DONE_LABEL>" \
   -f "color=#36cd96" \
   -f "description=MR resolving this issue has been merged into staging."
 
 # GitHub — uses labels on the repo
-gh api repos/<project>/labels | grep -q "done-in-staging" || \
+gh api repos/<project>/labels | grep -q "<DONE_LABEL>" || \
 gh api repos/<project>/labels --method POST \
-  -f "name=done-in-staging" \
+  -f "name=<DONE_LABEL>" \
   -f "color=36cd96" \
   -f "description=PR resolving this issue has been merged into staging."
 ```
@@ -92,10 +94,10 @@ If no valid ids: exit with `MR/PR has no parseable linked issues. Nothing to lab
 
 ```bash
 # GitLab — additive, does not replace existing labels
-glab api -X PUT projects/<encoded-project>/issues/<id> -f "add_labels=done-in-staging"
+glab api -X PUT projects/<encoded-project>/issues/<id> -f "add_labels=<DONE_LABEL>"
 
 # GitHub
-gh api repos/<project>/issues/<id>/labels --method POST -f "labels[]=done-in-staging"
+gh api repos/<project>/issues/<id>/labels --method POST -f "labels[]=<DONE_LABEL>"
 ```
 
 Idempotent. Capture each call's status — note failures in the report but continue.
@@ -105,7 +107,7 @@ Idempotent. Capture each call's status — note failures in the report but conti
 ```
 MR/PR #<id> (<title>) — merged at <timestamp>
 
-Linked issues labeled `done-in-staging`:
+Linked issues labeled `<DONE_LABEL>`:
   #<id> <title>
   #<id> <title>
 
@@ -128,5 +130,5 @@ Issues are still OPEN — will auto-close when staging → main flows.
 ```
 /git-auto-merge     → push, merge into integration branch, open MR/PR
 (you)               → review the MR/PR in the UI, merge it
-/post-merge         → label all linked issues as done-in-staging
+/post-merge         → label all linked issues with <DONE_LABEL>
 ```
