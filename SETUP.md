@@ -79,17 +79,19 @@ That's it. The skill reads `.agent-teamflow`, resolves your identity, drafts an 
 your-repo/
 ├── .agent-teamflow          ← team config
 ├── CLAUDE.md                ← tells Claude to read config before any skill
+├── skills/                  ← skill logic (agent-agnostic runbooks)
+│   ├── resolve.md
+│   ├── git-auto-merge.md
+│   ├── post-merge.md
+│   ├── issue.md
+│   ├── dispatch.md
+│   └── prod-check.md
 ├── .claude/
-│   └── commands/            ← slash commands
-│       ├── resolve.md
-│       ├── git-auto-merge.md
-│       ├── post-merge.md
-│       ├── issue.md
-│       ├── dispatch.md
-│       └── prod-check.md
+│   └── commands/            ← Claude Code entrypoints (thin wrappers)
+│       └── *.md             ← each just says "follow skills/X.md"
 └── ... your project files
 ```
 
 ## Updating skills
 
-Skills live in `.claude/commands/`. Edit them to fit your team's conventions — rename labels, adjust the model assignment rules in `/resolve`, add project-specific checklist items to `/prod-check`.
+Edit files in `skills/`. The `.claude/commands/` wrappers just point at them — no changes needed there. For other agents, point them at `skills/` directly or add your own adapter folder.
