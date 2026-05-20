@@ -37,7 +37,7 @@ Sam runs a side project alone. They've got three things they want to land before
 /issue add a rate limit to the public API — 60 req/min per IP, return 429 with Retry-After
 ```
 
-Claude reads `.agent-teamflow`, resolves Sam as the current user (from `git config user.email`), and drafts a single issue. Sam reviews and clicks **Create all**. Issue #12 is filed.
+The agent reads `.agent-teamflow`, resolves Sam as the current user (from `git config user.email`), and drafts a single issue. Sam reviews and clicks **Create all**. Issue #12 is filed.
 
 Sam runs `/issue` two more times for the CSV export bug (#13) and the search pagination feature (#14).
 
@@ -47,9 +47,9 @@ Sam runs `/issue` two more times for the CSV export bug (#13) and the search pag
 /resolve
 ```
 
-Claude lists Sam's three open issues. Sam picks #12 only — he wants to verify the rate-limit logic carefully before tackling the others.
+The agent lists Sam's three open issues. Sam picks #12 only — he wants to verify the rate-limit logic carefully before tackling the others.
 
-Claude spawns **one** fork in an isolated worktree. The fork:
+The agent starts **one** worker in an isolated worktree. The worker:
 
 1. Branches `12-add-rate-limit` off `origin/staging` (no personal lane to fall back from)
 2. Implements the rate limiter
@@ -69,7 +69,7 @@ Because there's no `owners` entry for Sam, this skill resolves the integration b
 
 ### Step 3 — Knock out the other two in parallel
 
-Back to the main repo. Sam runs `/resolve` again, picks #13 and #14, and Claude spawns two parallel forks. Both branch off `origin/staging` (now containing the rate-limit commit). Both come back ready.
+Back to the main repo. Sam runs `/resolve` again, picks #13 and #14, and the agent starts two parallel workers. Both branch off `origin/staging` (now containing the rate-limit commit). Both come back ready.
 
 Sam runs `/git-auto-merge` from each worktree. Each one pushes its feature branch and merges into `staging`. PR #20 auto-updates with the new commits and adds `Closes #13` and `Closes #14`.
 
@@ -81,7 +81,7 @@ Before merging PR #20 to `main`, Sam runs:
 /prod-check
 ```
 
-Claude scopes to Sam's commits since midnight, diffs them, and cross-references callers across the whole repo. It finds one Warning:
+The agent scopes to Sam's commits since midnight, diffs them, and cross-references callers across the whole repo. It finds one Warning:
 
 ```
 | Severity | File:Line          | Risk                            | Suggested fix                  |

@@ -6,18 +6,21 @@ The fastest way to contribute is to add a new skill, fix a runbook, or improve a
 
 ```
 skills/                    ← runbooks (source of truth, agent-agnostic markdown)
-.claude/commands/          ← project-scope wrappers (one per skill, thin)
-setup                      ← script that generates user-scope wrappers
+AGENTS.md                  ← shared protocol for all coding agents
+CLAUDE.md -> AGENTS.md     ← Claude Code compatibility symlink
+.claude/commands/          ← Claude Code wrapper sources
+.codex/prompts/            ← Codex prompt sources
+setup                      ← script that installs runtime adapters
 examples/                  ← three narrative walkthroughs (no runnable code)
 ```
 
-Skills are plain markdown runbooks. Wrappers are 5-line files that point Claude Code at a runbook. The `setup` script reads the project-scope wrappers and writes user-scope copies into `~/.claude/commands/`, rewriting relative paths to absolute install paths so the commands work from any repo.
+Skills are plain markdown runbooks. `AGENTS.md` contains the shared protocol, while `.claude/` and `.codex/` contain tool-specific entrypoints. The `setup` script writes Claude Code wrappers into `~/.claude/commands/` and Codex prompts into `${CODEX_HOME:-~/.codex}/prompts/`.
 
-If you're contributing, you only ever edit the project-scope sources. The user-scope copies are regenerated on every `./setup` run.
+If you're contributing, edit the source files in `skills/`, `AGENTS.md`, `.claude/`, and `.codex/`. User-scope copies are regenerated on every `./setup` run.
 
 ## Adding a new skill
 
-Two files, always paired:
+At minimum, update the runbook and the matching wrapper under `.claude/commands/` and `.codex/prompts/`.
 
 **1. `skills/<name>.md`** — the runbook. Follow the shape used by existing skills:
 
@@ -26,7 +29,7 @@ Two files, always paired:
 
 <one-sentence summary of what the skill does>
 
-Run as a **forked agent** — call Agent without `subagent_type` so CLI output stays out of the main conversation. (Or: orchestrate in the main thread if the skill uses AskUserQuestion. Be explicit either way at the top.)
+Run in the main conversation when user interaction is required. If the work can run independently, use an isolated implementation worker or worktree when the current agent runtime supports it.
 
 ---
 
@@ -46,14 +49,14 @@ Read `.agent-teamflow` from the repo root. Extract the fields your skill needs. 
 - <constraints — e.g. never push to main, never delete branches without explicit approval>
 ```
 
-**2. `.claude/commands/<name>.md`** — the wrapper. Always this shape:
+**2. `.claude/commands/<name>.md` and `.codex/prompts/<name>.md`** — runtime entrypoints. Use this shape:
 
 ```markdown
 ---
 description: <one-sentence shown in Claude Code's slash-command picker>
 ---
 
-Read `CLAUDE.md`, then read `.agent-teamflow` from the repo root, then follow `skills/<name>.md` exactly.
+Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow `skills/<name>.md` exactly.
 
 Arguments: $ARGUMENTS
 ```
@@ -64,18 +67,19 @@ That's it. Don't put logic in the wrapper — keep it pointing at the runbook so
 
 - **No emojis** anywhere — runbooks, wrappers, examples, commit messages, output.
 - **No "we" / "I"** in runbooks; use imperatives ("Read", "Run", "Verify").
-- **Reference config fields**, not literals — `<branches.staging>`, `<labels.doneInStaging>`, `<WORKFLOW_DIR>`. The CLAUDE.md table at the top of the repo lists the canonical placeholders.
+- **Reference config fields**, not literals — `<branches.staging>`, `<labels.doneInStaging>`, `<WORKFLOW_DIR>`. `AGENTS.md` lists the canonical placeholders.
 - **Mention `owners` resolution** by referencing `git-auto-merge.md` Step 0 rather than re-explaining it.
 - **Default-value documentation only** for optional fields — don't sprinkle string literals through the runbook.
 
 ## Local smoke test
 
-Run `setup` against an isolated `HOME` to confirm generation works without touching your real Claude Code install:
+Run `setup` against an isolated `HOME` to confirm generation works without touching your real agent installs:
 
 ```bash
-HOME=/tmp/at-test ./setup
+HOME=/tmp/at-test ./setup --all
 ls /tmp/at-test/.claude/commands/
 cat /tmp/at-test/.claude/commands/<name>.md   # verify absolute paths
+ls /tmp/at-test/.codex/prompts/<name>.md
 rm -rf /tmp/at-test
 ```
 

@@ -49,7 +49,7 @@ bob: add shipping zones config — let admins define rates per region
 bob: paginate the cart line items when over 50 items
 ```
 
-Claude reads `.agent-teamflow`, parses the brain dump, honors the explicit `alice:` / `bob:` hints, and verifies no cross-assignee blockers (none here — checkout/payments don't depend on shipping/cart).
+The agent reads `.agent-teamflow`, parses the brain dump, honors the explicit `alice:` / `bob:` hints, and verifies no cross-assignee blockers (none here — checkout/payments don't depend on shipping/cart).
 
 It writes `docs/workflow/workflow-20260519-1030.md` capturing the split and rationale, then files four issues:
 
@@ -60,7 +60,7 @@ It writes `docs/workflow/workflow-20260519-1030.md` capturing the split and rati
 
 ### Step 2 — Alice and Bob resolve in parallel
 
-Both developers open Claude Code in the same repo, at the same time.
+Both developers open their coding agents in the same repo, at the same time.
 
 **Alice's terminal:**
 
@@ -68,10 +68,10 @@ Both developers open Claude Code in the same repo, at the same time.
 /resolve
 ```
 
-Claude fetches Alice's open issues (#5, #6). She picks both. Claude checks whether `alice-staging` is behind `staging` — it is (Bob merged a doc fix yesterday). It asks Alice if she wants to sync; she clicks **Yes — sync now**. Then it spawns two parallel forks:
+The agent fetches Alice's open issues (#5, #6). She picks both. The agent checks whether `alice-staging` is behind `staging` — it is (Bob merged a doc fix yesterday). It asks Alice if she wants to sync; she clicks **Yes — sync now**. Then it starts two parallel workers:
 
 ```
-Model assignments: #5 → sonnet, #6 → sonnet
+Effort assignments: #5 -> default, #6 -> default
 
 Batch 1: 2 ready
 
@@ -89,7 +89,7 @@ MR/PR (alice-staging → staging): https://github.com/your-org/your-repo/pull/10
 /resolve
 ```
 
-Bob picks #7 and #8. Two forks spawn in his own worktrees, off `bob-staging`. They come back ready and Claude opens PR #11 (`bob-staging` → `staging`).
+Bob picks #7 and #8. Two workers start in his own worktrees, off `bob-staging`. They come back ready and the agent opens PR #11 (`bob-staging` → `staging`).
 
 Neither developer's worktrees touch the other's branches. No conflicts, no coordination needed.
 
@@ -101,7 +101,7 @@ Before either PR merges to `staging`, Alice runs:
 /prod-check
 ```
 
-Claude scopes to her commits since midnight and cross-references callers across the whole repo:
+The agent scopes to her commits since midnight and cross-references callers across the whole repo:
 
 ```
 | Severity | File:Line              | Risk                              | Suggested fix                    |
@@ -120,7 +120,7 @@ Alice merges PR #10 via the GitHub UI. Bob does the same for PR #11. Then each r
 /post-merge
 ```
 
-Claude scans their just-merged PR, reads `Closes #5`, `Closes #6` (Alice) and `Closes #7`, `Closes #8` (Bob) from the body, and labels each issue `done-in-staging`. The issues stay open — they auto-close when `staging` flows to `main` on release day.
+The agent scans their just-merged PR, reads `Closes #5`, `Closes #6` (Alice) and `Closes #7`, `Closes #8` (Bob) from the body, and labels each issue `done-in-staging`. The issues stay open — they auto-close when `staging` flows to `main` on release day.
 
 ---
 
@@ -129,7 +129,7 @@ Claude scans their just-merged PR, reads `Closes #5`, `Closes #6` (Alice) and `C
 | Skill | What happened |
 |---|---|
 | `/dispatch` | Split a brain dump across two assignees with no cross-assignee blockers; wrote a workflow log |
-| `/resolve` (×2) | Alice and Bob ran parallel forks simultaneously — four branches, zero conflicts |
+| `/resolve` (×2) | Alice and Bob ran parallel workers simultaneously — four branches, zero conflicts |
 | `/git-auto-merge` | Each developer's lane received their work independently; two PRs to `staging` opened |
 | `/prod-check` | Caught a loose-equality bug before staging |
 | `/post-merge` | Issues labeled `done-in-staging` after each PR merged |

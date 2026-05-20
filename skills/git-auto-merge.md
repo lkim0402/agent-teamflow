@@ -2,7 +2,7 @@
 
 Commit, push the feature branch, merge into the owner's integration branch (auto-detected from `.agent-teamflow`), then open or update an MR/PR from that integration branch to staging.
 
-Run this entire workflow as a **forked agent** — call the Agent tool without `subagent_type` so git output stays out of the main conversation. Report only the final result (branch push status, MR/PR URL, and which integration branch was used) to the user.
+Run this workflow in an isolated worker if the current agent runtime supports one; otherwise run it in the main session. Keep intermediate git output concise and report only the final result (branch push status, MR/PR URL, and which integration branch was used) to the user.
 
 ---
 
@@ -129,7 +129,7 @@ Cleanup is up to you. If this was an ephemeral worktree branch and you want to d
 
   git push origin --delete <feature-branch>   # remove branch from origin
   /exit                                        # then choose "remove" at the
-                                               # Claude Code worktree prompt
+                                               # agent worktree prompt
 ```
 
 ---
@@ -144,4 +144,4 @@ Cleanup is up to you. If this was an ephemeral worktree branch and you want to d
 
 **Exception (with explicit per-turn approval):**
 
-Deletion is permitted only if the user explicitly requests it in the current turn AND you ask via AskUserQuestion with each item listed by its exact path or branch name, AND the user clicks Approve. Approval does NOT persist across turns.
+Deletion is permitted only if the user explicitly requests it in the current turn AND you ask via ask the user with each item listed by its exact path or branch name, AND the user clicks Approve. Approval does NOT persist across turns.

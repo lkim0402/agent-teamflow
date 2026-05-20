@@ -2,7 +2,7 @@
 
 Pick open issues assigned to you and implement them in parallel. Each issue gets its own worktree + branch. Stops at local commits — you run `/git-auto-merge` from each worktree to ship.
 
-You orchestrate this command **in the main thread** (you need AskUserQuestion to interact with the user). Only the per-issue implementation work runs in parallel forks. Do not run this whole command as a forked agent.
+Orchestrate this workflow in the main conversation because it needs user interaction. Only the per-issue implementation work may run in isolated workers.
 
 ---
 
@@ -11,8 +11,8 @@ You orchestrate this command **in the main thread** (you need AskUserQuestion to
 1. Read `.agent-teamflow` and resolve the current owner + integration branch.
 2. Fetch open issues assigned to that user (or use the `<id>` arg if given).
 3. Let the user pick up to **3 issues** to tackle now.
-4. Spawn one parallel fork per picked issue. Each fork:
-   - runs in its own auto-created worktree (`isolation: "worktree"`)
+4. Start one isolated implementation worker per picked issue when the current agent runtime supports parallel workers. Each worker:
+   - runs in its own worktree
    - creates a branch off `origin/<INTEGRATION_BRANCH>`
    - reads relevant context docs if your project has them
    - implements the issue
@@ -25,8 +25,8 @@ You orchestrate this command **in the main thread** (you need AskUserQuestion to
 
 `$ARGUMENTS`:
 - empty → list mode (pick from open assigned issues)
-- single integer `42` → skip picker, go straight to one fork for issue #42
-- multiple integers `42 43 44` → skip picker, spawn one fork per issue (still capped at 3)
+- single integer `42` → skip picker, go straight to issue #42
+- multiple integers `42 43 44` → skip picker, start one implementation worker per issue when available (still capped at 3)
 
 ---
 
@@ -48,7 +48,7 @@ If it exists, use it as `<INTEGRATION_BRANCH>`. If not, fall back to `branches.s
 
 **1d — Optionally sync the integration branch from staging (ALWAYS ask the owner first).**
 
-This step is **owner-gated**, not automatic. Before spawning any forks, check whether `origin/<branches.staging>` has commits beyond `origin/<INTEGRATION_BRANCH>`:
+This step is **owner-gated**, not automatic. Before starting implementation workers, check whether `origin/<branches.staging>` has commits beyond `origin/<INTEGRATION_BRANCH>`:
 
 ```bash
 git fetch origin <branches.staging> <INTEGRATION_BRANCH>
@@ -56,7 +56,7 @@ git log origin/<INTEGRATION_BRANCH>..origin/<branches.staging> --oneline
 ```
 
 - If the output is empty → already in sync. Print one line and proceed to Step 2.
-- If non-empty → ask the owner (AskUserQuestion, single-select):
+- If non-empty → ask the owner (ask the user, single-select):
   - `Yes — sync now` (list first ~5 commit subjects in description)
   - `Skip — keep current state`
 
@@ -96,28 +96,28 @@ If the filtered list is empty: tell the user and stop.
 
 **If ids were passed in $ARGUMENTS:** use those directly (cap at 3; if more, take the first 3 and tell the user).
 
-**If list mode and ≤4 issues:** AaskUserQuestion with `multiSelect: true`, one option per issue. Label: `#<id> <title>` (truncate at ~60 chars). Description: first sentence of issue body. Question: "Which issues to tackle now? (max 3)"
+**If list mode and ≤4 issues:** ask the user with `multiSelect: true`, one option per issue. Label: `#<id> <title>` (truncate at ~60 chars). Description: first sentence of issue body. Question: "Which issues to tackle now? (max 3)"
 
 **If list mode and >4 issues:** present a numbered list and ask the user to reply with comma-separated numbers. Parse the reply. Cap at 3.
 
 If the user picks 0: stop, no-op.
 
-### Step 3.5. Assign model per issue
+### Step 3.5. Assign effort per issue
 
-Fetch the full issue body for each picked issue. Classify and assign a model — first match wins:
+Fetch the full issue body for each picked issue. Classify the implementation effort — first match wins:
 
-**Opus** — for complex, high-judgment work:
+**High effort** — for complex, high-judgment work:
 - Issue body > 500 characters, OR
 - Labels contain any of: `complex`, `architecture`, `security`, `auth`, `refactor`, `migration`, `perf`, `performance`, OR
 - Title or body contains (case-insensitive): `refactor`, `redesign`, `migrate`, `race condition`, `auth`, `permission`, `security`, `transaction`, `concurrent`
 
-**Sonnet** — everything else (default).
+**Default effort** — everything else.
 
-Print a one-liner before spawning: e.g. `Model assignments: #42 → opus, #43 → sonnet`
+Print a one-liner before implementation: e.g. `Effort assignments: #42 -> high, #43 -> default`
 
-### Step 4. Spawn parallel forks
+### Step 4. Start implementation workers
 
-Launch **all forks in a single message** using multiple `Agent` tool calls (no `subagent_type`; `isolation: "worktree"`). Each fork uses the model assigned in Step 3.5. Fill in the briefing template below per issue.
+Launch all implementation workers in parallel when the current agent runtime supports safe parallel work. Otherwise process the selected issues sequentially. Each implementation must use the effort assigned in Step 3.5 and the briefing template below.
 
 ### Fork briefing template
 
@@ -140,11 +140,11 @@ Read `.agent-teamflow` from the repo root. Use `issueTracker`, `project`, and `b
 3. Verify with `git status`.
 
 ## Context docs
-If the project has per-area context documents (check CLAUDE.md for a routing table), read the relevant ones before touching code.
+If the project has per-area context documents (check AGENTS.md for a routing table), read the relevant ones before touching code.
 
 ## Implement
 - Make the changes required by the issue's acceptance criteria.
-- Do NOT run the dev server (other forks are running in parallel; ports may collide).
+- Do NOT run the dev server (other workers may be running in parallel; ports may collide).
 - Type-check is fine; skip the full test suite to keep parallel runs sane.
 
 ## Commit
@@ -175,7 +175,7 @@ Never close the issue. Never push. Never run /git-auto-merge.
 
 ### Step 5. Collect (per batch) — terse one-liner only
 
-When all forks return, parse each `STATUS:` block and push each fork's data to the **ready worktrees accumulator** (for ready) and a parallel **blocked/unknown** list. Print ONLY a terse one-liner:
+When all implementation workers return, parse each `STATUS:` block and push each worker's data to the **ready worktrees accumulator** (for ready) and a parallel **blocked/unknown** list. Print ONLY a terse one-liner:
 
 `Batch <N>: <ready-count> ready[, <blocked-count> blocked][, <unknown-count> unknown]`
 
@@ -183,18 +183,18 @@ Examples:
 - `Batch 1: 3 ready`
 - `Batch 2: 2 ready, 1 blocked (#44)`
 
-If any fork was blocked or returned unknown status, note it. The detailed reasons surface in Step 8's table.
+If any worker was blocked or returned unknown status, note it. The detailed reasons surface in Step 8's table.
 
 ### Step 6. Accumulate, then ask to continue
 
 Maintain two session-scoped sets:
 - **processed ids** — every id that hit step 4 (whether ready / blocked / unknown).
-- **ready worktrees** — every fork that returned `STATUS: ready`.
+- **ready worktrees** — every worker that returned `STATUS: ready`.
 
 Re-fetch open assigned issues. Apply the same label filter as Step 2. Subtract processed ids → **remaining queue**.
 
 - **Queue empty** → fall through to Step 7.
-- **Queue has 1+ issues** → AskUserQuestion (single-select):
+- **Queue has 1+ issues** → ask the user (single-select):
   - `Yes — pick from remaining`
   - `Stop — proceed to merge step`
   - `Yes` → loop back to Step 3. Skip Step 1.
@@ -218,7 +218,7 @@ Pre-merge summary (vs origin/<INTEGRATION_BRANCH>):
 
 #### 7b. Merge confirmation
 
-AskUserQuestion (single-select):
+ask the user (single-select):
 - `Merge all (default)` — batch-merge every ready worktree
 - `Pick specific subset` — follow-up multi-select
 - `Skip — don't merge any`
@@ -259,7 +259,7 @@ PRE_MERGE_HEAD=$(git rev-parse origin/<INTEGRATION_BRANCH>)
    git branch -D <INTEGRATION_BRANCH>-batch-tmp
    ```
 
-5. ONE fork creates/updates the MR/PR:
+5. ONE isolated worker creates/updates the MR/PR:
    ```
    You are creating/updating a single MR/PR. All feature branches are already merged into <INTEGRATION_BRANCH>.
 
@@ -283,7 +283,7 @@ After merges, ask:
 - `prod-check only`
 - `Both`
 
-If anything selected, spawn ONE fork scoped to `PRE_MERGE_HEAD..origin/<INTEGRATION_BRANCH>`:
+If anything selected, start ONE isolated worker scoped to `PRE_MERGE_HEAD..origin/<INTEGRATION_BRANCH>`:
 
 ```
 Run post-merge checks on the just-merged commits only (not all integration-branch work).
@@ -310,7 +310,7 @@ No emojis. Do not modify files. Do not commit. Do not push.
 
 Ask for explicit approval before deleting anything. List every item by exact name/path.
 
-AskUserQuestion (single-select):
+ask the user (single-select):
 - `Approve full cleanup` — description lists EACH worktree path AND EACH branch by exact name
 - `Branches only — keep worktrees`
 - `Skip — clean up manually later`
@@ -325,10 +325,10 @@ If approved, execute in this order:
 Display ONCE at the very end — a single consolidated table:
 
 ```
-| Issue | Model  | Status  | Branch         | Files | Commit  | Merge      | Cleanup      | Summary                      |
+| Issue | Effort | Status  | Branch         | Files | Commit  | Merge      | Cleanup      | Summary                      |
 |-------|--------|---------|----------------|-------|---------|------------|--------------|------------------------------|
-| #13   | sonnet | ready   | 13-fix-tooltip | 2     | abc123d | merged     | branch+wt rm | Fixed tooltip overlap        |
-| #14   | opus   | blocked | -              | -     | -       | -          | -            | Build error — see fork notes |
+| #13   | default| ready   | 13-fix-tooltip | 2     | abc123d | merged     | branch+wt rm | Fixed tooltip overlap        |
+| #14   | high   | blocked | -              | -     | -       | -          | -            | Build error — see worker notes |
 ```
 
 After the table:
@@ -348,16 +348,16 @@ Queue:
 
 ## Hard rules
 
-- **Cap at 3 parallel implementation forks** — never more.
+- **Cap at 3 parallel implementation workers** — never more.
 - **Main thread does no implementation** — only orchestration.
-- **Implementation forks must not push, create MRs/PRs, or close issues.**
-- **Step 7 batch-merge in main thread, MR/PR step in ONE fork.**
+- **Implementation workers must not push, create MRs/PRs, or close issues.**
+- **Step 7 batch-merge in main thread, MR/PR step in ONE worker.**
 - **No emojis** anywhere.
-- **Worktree isolation is non-negotiable for implementation forks.**
+- **Worktree isolation is non-negotiable for implementation workers.**
 
 ## Error handling
 
 - Issue list fetch fails → report the error, stop.
 - User picks 0 issues → no-op, exit cleanly.
-- Fork returns `STATUS: blocked` → note in Step 5's one-liner, capture reason for Step 8's table. Do not auto-retry.
-- Fork returns malformed output → mark as `STATUS: unknown`, surface its last 200 chars in Step 8's table.
+- Worker returns `STATUS: blocked` → note in Step 5's one-liner, capture reason for Step 8's table. Do not auto-retry.
+- Worker returns malformed output → mark as `STATUS: unknown`, surface its last 200 chars in Step 8's table.

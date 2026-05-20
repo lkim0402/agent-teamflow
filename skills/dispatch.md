@@ -2,7 +2,7 @@
 
 Split a brain dump into parallel issues for multiple team members, write a workflow file, and push.
 
-Run this entire workflow as a **forked agent** — call the Agent tool without `subagent_type` so docs/CLI output stays out of the main conversation. Report only the final result (workflow file path, issue URLs, commit/push status).
+Run this workflow in an isolated worker if the current agent runtime supports one; otherwise run it in the main session. Keep intermediate docs/CLI output concise and report only the final result (workflow file path, issue URLs, commit/push status).
 
 ---
 
@@ -27,7 +27,7 @@ Tasks may include explicit assignment hints (e.g. `"alice: fix X"`, `"bob does Y
 
 - **No cross-assignee blockers.** Tasks within one assignee may be sequential; tasks across assignees must be independent. If the brain dump implies a cross-assignee dependency, restructure so the dependent piece lives entirely with one assignee, or flag it in the workflow file under `## Dependencies (manual coordination)` and do NOT create the blocked issue yet.
 - **No emojis** anywhere — workflow file, issue titles, bodies, commit messages.
-- **Read before write.** If the project has per-area context docs (check CLAUDE.md or a `docs/` directory), read the relevant ones before writing issue bodies. Issue bodies must reference actual files, not vague "update the X page" phrasing.
+- **Read before write.** If the project has per-area context docs (check AGENTS.md or a `docs/` directory), read the relevant ones before writing issue bodies. Issue bodies must reference actual files, not vague "update the X page" phrasing.
 
 ## Execution
 

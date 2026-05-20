@@ -1,10 +1,10 @@
 # issue
 
-Create one or more issues from a single brain dump. Splits the input into branch-sized chunks (so `/resolve` can pick each up as one fork/branch without batch-merge conflicts), drafts each, asks for confirmation, then posts.
+Create one or more issues from a single brain dump. Splits the input into branch-sized chunks (so `/resolve` can pick each up as one worker/branch without batch-merge conflicts), drafts each, asks for confirmation, then posts.
 
 **Why branch-sized:** `/resolve` treats each issue as one worktree + one branch. If two issues touch overlapping line ranges in the same file, the sequential batch-merge halts with a conflict. Scoping issues at branch granularity from the start prevents this.
 
-The heavy work (splitting, composing bodies) runs in a **forked agent** so output stays out of the main conversation. The confirmation prompt and issue creation run in the main conversation.
+The heavy work (splitting, composing bodies) may run in an isolated worker when the current agent runtime supports one. The confirmation prompt and issue creation run in the main conversation.
 
 Never post any issue without explicit user confirmation.
 
@@ -39,9 +39,9 @@ Read `.agent-teamflow`. Extract `issueTracker`, `project`, and `owners`.
 - Strip the assignee prefix if present.
 - Resolve the assignee per the rules above.
 
-### 2. Compose drafts (forked agent)
+### 2. Compose drafts
 
-Call `Agent` without `subagent_type`. Pass the task description and assignee, and instruct it to:
+Use an isolated worker if available. Otherwise compose in the main session. Pass the task description and assignee, and follow these drafting rules:
 
 **2a. Split into branch-sized chunks.** Rules (priority order):
 
@@ -54,7 +54,7 @@ If the input describes one concern → 1 issue. If N independent concerns → N 
 
 **2b. For each chunk, compose:**
 
-- Check if the project has per-area context docs (look for a CLAUDE.md routing table or a `docs/` directory). If so, read the relevant ones before writing the issue body.
+- Check if the project has per-area context docs (look for a AGENTS.md routing table or a `docs/` directory). If so, read the relevant ones before writing the issue body.
 - **Title**: short, imperative. Under ~70 chars. No emojis.
 - **Body** (markdown):
   ```markdown
@@ -89,7 +89,7 @@ TOUCHED FILES: <comma-separated paths, or "n/a (cross-cutting)">
 ...
 ```
 
-**Do NOT create any issue.** The forked agent only drafts.
+**Do NOT create any issue.** This step only drafts.
 
 ### 3. Preview to user (main)
 
@@ -97,16 +97,16 @@ Display all drafts with rationale and touched files. For N > 1, include `Issue k
 
 ### 4. Ask for confirmation (main)
 
-AskUserQuestion (single-select):
+ask the user (single-select):
 - `Create all` — create all N issues as drafted
-- `Edit first` — user provides free-text edits; re-run the forked agent, then re-confirm (cap at 3 iterations)
+- `Edit first` — user provides free-text edits; re-run drafting, then re-confirm (cap at 3 iterations)
 - `Change assignee` — keep bodies, change assignee for all; go straight to step 6
 - `Cancel` — do nothing
 
 ### 5. Act on selection (main)
 
 - **`Create all`**: proceed to step 6.
-- **`Edit first`**: ask for free-text changes, re-run forked agent for draft v2, loop to step 3.
+- **`Edit first`**: ask for free-text changes, re-run drafting for draft v2, loop to step 3.
 - **`Change assignee`**: ask for new assignee alias, normalize, go to step 6.
 - **`Cancel`**: print `Cancelled` and exit.
 
@@ -122,7 +122,7 @@ glab issue create --title "<title>" --description "<body>" --assignee <username>
 gh issue create --title "<title>" --body "<body>" --assignee <username>
 ```
 
-If a creation fails mid-batch: stop, report which one failed and the exact error, then ask (AskUserQuestion) whether to continue with remaining or abort.
+If a creation fails mid-batch: stop, report which one failed and the exact error, then ask (ask the user) whether to continue with remaining or abort.
 
 ### 7. Report
 

@@ -43,7 +43,7 @@ Dan is leading this sprint. He runs:
 /dispatch /tmp/sprint-brief.md
 ```
 
-The brief lists five separate features. Claude reads `.agent-teamflow`, finds no `owners` map, and asks Dan for the assignee aliases to distribute across — Dan provides `alice,bob,carol,dan`. Claude splits the work:
+The brief lists five separate features. The agent reads `.agent-teamflow`, finds no `owners` map, and asks Dan for the assignee aliases to distribute across — Dan provides `alice,bob,carol,dan`. The agent splits the work:
 
 - #30 — Alice: "Tokenize search input for partial word matches"
 - #31 — Bob: "Add CSV export to the orders report"
@@ -63,11 +63,11 @@ All four developers run `/resolve` in their own terminals over the next hour.
 /resolve
 ```
 
-Claude looks up Alice in `owners` — not found. It falls back to `staging`, warns Alice that `<INTEGRATION_BRANCH>` resolved to `staging` (the shared branch), and asks if she wants to sync. She clicks **Yes**. The fork branches `30-search-tokenizer` off `origin/staging` and implements.
+The agent looks up Alice in `owners` — not found. It falls back to `staging`, warns Alice that `<INTEGRATION_BRANCH>` resolved to `staging` (the shared branch), and asks if she wants to sync. She clicks **Yes**. The worker branches `30-search-tokenizer` off `origin/staging` and implements.
 
 **Bob's resolve** (he has two issues — #31 and #33):
 
-Same fallback. Two forks spawn off `origin/staging`. They branch as `31-export-csv` and `33-webhook-retry`. Both implement against the same base.
+Same fallback. two workers spawn off `origin/staging`. They branch as `31-export-csv` and `33-webhook-retry`. Both implement against the same base.
 
 **Carol's** and **Dan's** runs are identical in structure.
 
@@ -91,7 +91,7 @@ Before the next release window, **someone needs to run `/prod-check`** scoped to
 /prod-check 1a2b3c4..HEAD
 ```
 
-Where `1a2b3c4` is the merge base from the last release. Claude diffs all five features together and cross-references callers across the whole repo. It catches a real one:
+Where `1a2b3c4` is the merge base from the last release. The agent diffs all five features together and cross-references callers across the whole repo. It catches a real one:
 
 ```
 | Severity | File:Line                | Risk                                          | Suggested fix                       |
@@ -101,7 +101,7 @@ Where `1a2b3c4` is the merge base from the last release. Claude diffs all five f
 | Advice   | src/webhooks/retry.ts:30 | Jitter range too narrow under high concurrency| Widen jitter to ±25%                |
 ```
 
-Dan files a hotfix issue (#35), assigns it to himself, and runs `/resolve 35` — straight to one fork, skipping the picker. The hashing fix lands within an hour, in a new feature branch off the latest `staging`.
+Dan files a hotfix issue (#35), assigns it to himself, and runs `/resolve 35` — straight to one worker, skipping the picker. The hashing fix lands within an hour, in a new feature branch off the latest `staging`.
 
 ### Step 5 — Merge to main and label
 
@@ -125,7 +125,7 @@ After release-day testing, the release manager merges `staging` → `main`. Each
 This team chose shared staging for simplicity. If they hit any of these, they should consider adding `owners`:
 
 - **Two developers regularly need work-in-progress to live somewhere** that survives a `git push` without polluting `staging`.
-- **`/resolve` syncs from `staging`** start picking up half-merged work that breaks the fork's branch.
+- **`/resolve` syncs from `staging`** start picking up half-merged work that breaks the worker's branch.
 - **Pre-release `/prod-check`** gets noisy because everyone's commits are interleaved.
 
 When that happens, see [`small-team/`](../small-team/) for the personal-lanes setup.

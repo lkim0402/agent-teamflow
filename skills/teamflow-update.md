@@ -1,14 +1,14 @@
 # teamflow-update
 
-Pull the latest agent-teamflow into the install directory and re-register the user-scope slash commands. Use this when a teammate ships a new skill or a runbook is updated upstream.
+Pull the latest agent-teamflow into the install directory and re-register the user-scope runtime adapters. Use this when a teammate ships a new skill or a runbook is updated upstream.
 
-Run as a **forked agent** — call Agent without `subagent_type` so the git/setup output stays out of the main conversation. Report only the final summary.
+Run this workflow in an isolated worker if the current agent runtime supports one; otherwise run it in the main session. Keep git/setup output concise and report only the final summary.
 
 ---
 
 ## Setup
 
-The install directory is the directory containing this runbook's parent — i.e. if this file lives at `/Users/foo/.claude/skills/agent-teamflow/skills/teamflow-update.md`, the install dir is `/Users/foo/.claude/skills/agent-teamflow`. Read the absolute path the wrapper passes to you and derive it.
+The install directory is the directory containing this runbook's parent — for the documented global install, that is usually `~/.agent-teamflow`. If a runtime wrapper passes an absolute runbook path, derive the install dir from that path.
 
 If `.git` does not exist at that path: stop and tell the user the install looks corrupted — they should reclone with the README's quick-start command.
 
@@ -45,7 +45,7 @@ If `git pull` fails because the working tree has local changes (the user customi
 ./setup
 ```
 
-Capture the output. The script prints `Installed <N> agent-teamflow slash commands into <path>` — that's the count of regenerated commands.
+Capture the output. The script prints adapter install counts for Claude Code and/or Codex.
 
 ### Step 4. Summarize the diff
 
@@ -66,7 +66,7 @@ New commits:
   <hash> <subject>
   <hash> <subject>
 
-Slash commands regenerated: <N>
+Adapters regenerated: <summary from setup output>
 ```
 
 If no new commits: `Already up to date at <PRE_SUBJECT>.` (and skip everything else).

@@ -3,12 +3,13 @@
   <img src="https://img.shields.io/github/last-commit/lkim0402/agent-teamflow" alt="Last commit">
   <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/claude_code-compatible-8A2BE2" alt="Claude Code">
+  <img src="https://img.shields.io/badge/codex-compatible-111111" alt="Codex">
   <img src="https://img.shields.io/badge/team_size-2%2B-orange" alt="Team size 2+">
 </p>
 
 # agent-teamflow
 
-**Claude Code slash commands that let a team's AI agents work in parallel on the same repo without colliding.**
+**Agent workflow runbooks and adapters that let a team's coding agents work in parallel on the same repo without colliding.**
 
 When Alice and Bob both run `/resolve` at the same time on different issues, they need to file separate issues, push to separate branches, and merge cleanly into shared staging — without coordinating manually. agent-teamflow is the convention that makes that work.
 
@@ -16,7 +17,7 @@ It's three pieces:
 
 - **A config file** (`.agent-teamflow`) at the repo root, describing your issue tracker, branches, and per-developer integration lanes.
 - **A branching convention** — `feature → personal lane (optional) → shared staging → main`.
-- **Nine slash commands** — `/issue`, `/dispatch`, `/resolve`, `/git-auto-merge`, `/post-merge`, `/prod-check` for the workflow, plus setup helpers `/teamflow-init`, `/teamflow-update`, `/teamflow-help`.
+- **Nine workflows** — `/issue`, `/dispatch`, `/resolve`, `/git-auto-merge`, `/post-merge`, `/prod-check` for the team flow, plus setup helpers `/teamflow-init`, `/teamflow-update`, `/teamflow-help`.
 
 Most agent tooling supercharges one developer. agent-teamflow is the team layer — built for 2+ developers running agents in parallel against the same codebase.
 
@@ -32,30 +33,32 @@ From inside your team's repo root:
 
 ```bash
 git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamflow-tmp \
-  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/skills .agent-teamflow-tmp/CLAUDE.md . \
+  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/.codex .agent-teamflow-tmp/skills .agent-teamflow-tmp/AGENTS.md . \
+  && ln -sf AGENTS.md CLAUDE.md \
   && rm -rf .agent-teamflow-tmp
 ```
 
-This adds `.claude/commands/`, `skills/`, and `CLAUDE.md` to your repo. Review what was copied, then commit:
+This adds `.claude/commands/`, `.codex/prompts/`, `skills/`, `AGENTS.md`, and a `CLAUDE.md -> AGENTS.md` symlink to your repo. Review what was copied, then commit:
 
 ```bash
-git add .claude skills CLAUDE.md && git commit -m "add agent-teamflow"
+git add .claude .codex skills AGENTS.md CLAUDE.md && git commit -m "add agent-teamflow"
 ```
 
-Now anyone who clones this repo gets the slash commands automatically through Claude Code's project-scope discovery. New hires onboard on day 1. Version drift disappears.
+Now Claude Code users get project-scope slash commands automatically, and Codex users get the shared `AGENTS.md` protocol plus the same runbooks. New hires onboard on day 1. Version drift disappears.
 
 > **Already have a `.claude/` directory** with your own custom commands? `cp -r` will merge — inspect the result before committing.
 >
-> **Want to merge `CLAUDE.md`** with an existing one? After the copy, manually combine the two and delete the conflict.
+> **Want to merge `AGENTS.md`** with an existing one? After the copy, manually combine the two and delete the conflict.
 
-In Claude Code, run `/teamflow-init` to write `.agent-teamflow` (your team's config). Then commit that too.
+In your agent, run `/teamflow-init` to write `.agent-teamflow` (your team's config). Then commit that too.
 
 ### Install globally (alternative — for trying it out)
 
-One install on your machine; slash commands work in every repo:
+One install on your machine; Claude Code slash commands and Codex prompts work in every repo:
 
 ```bash
-git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.claude/skills/agent-teamflow && ~/.claude/skills/agent-teamflow/setup
+git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-teamflow \
+  && ~/.agent-teamflow/setup --all
 ```
 
 Each developer installs separately and updates independently (via `/teamflow-update`). Behavior is still configured per-repo via `.agent-teamflow`.
@@ -67,7 +70,7 @@ Either install path, the workflow is the same:
 ```
 /issue       file a single branch-sized issue from a one-line brain dump
 /dispatch    split a bigger brain dump across multiple teammates
-/resolve     pick up issues assigned to you and implement them in parallel forks
+/resolve     pick up issues assigned to you and implement them in parallel workers
 ```
 
 ### Vendor vs. global — which?
@@ -76,8 +79,8 @@ Either install path, the workflow is the same:
 |---|---|---|
 | Versions | Everyone on the team uses the same one (whatever's committed) | Each developer installs and updates independently |
 | Onboarding | New hires get it on day 1 | New hires have to install themselves |
-| Discoverability | `.claude/commands/` is visible in the repo | Nothing in the repo says "we use this" |
-| Repo footprint | Adds ~12 files + 1 config | Just `.agent-teamflow` |
+| Discoverability | `AGENTS.md`, `skills/`, `.claude/`, and `.codex/` are visible in the repo | Nothing in the repo says "we use this" |
+| Repo footprint | Adds shared runbooks, runtime dirs + 1 config | Just `.agent-teamflow` |
 | Updates | Re-vendor when you want to pull upstream changes | `/teamflow-update` per developer |
 
 Both modes use the same skills and the same config schema. Start with whichever fits, switch later if needed.
@@ -92,7 +95,7 @@ Two developers, two terminals, four parallel agents — same repo, no collisions
 │ > /resolve                            │  │ > /resolve                            │
 │                                       │  │                                       │
 │ Picked issues #5, #6.                 │  │ Picked issues #8, #9.                 │
-│ Spawning 2 forks in worktrees off     │  │ Spawning 2 forks in worktrees off     │
+│ Starting 2 workers in worktrees off   │  │ Starting 2 workers in worktrees off   │
 │ origin/alice-staging.                 │  │ origin/bob-staging.                   │
 │                                       │  │                                       │
 │ Batch 1: 2 ready                      │  │ Batch 1: 2 ready                      │
@@ -112,7 +115,7 @@ Four feature branches, four parallel agents, two developers — zero coordinatio
 
 ## What you get
 
-Nine slash commands. Three are lifecycle (`/teamflow-init`, `/teamflow-update`, `/teamflow-help`); the others are the actual team workflow.
+Nine workflows. Three are lifecycle (`/teamflow-init`, `/teamflow-update`, `/teamflow-help`); the others are the actual team workflow. Claude Code exposes them as slash commands; Codex maps the same names to the runbooks.
 
 | Command | What it does |
 |---|---|
@@ -158,7 +161,7 @@ If your team calls things differently — `develop` instead of `staging`, `maste
 
 ## Compatibility
 
-The actual skill logic lives in `skills/` — plain markdown runbooks any agent can read. `.claude/commands/` and the user-scope commands installed by `setup` are thin wrappers that point Claude Code at those runbooks. Other agents (Codex, etc.) can read `skills/` directly, or get their own adapter folder.
+The actual workflow logic lives in `skills/` — plain markdown runbooks any agent can read. `AGENTS.md` is the shared protocol. `.claude/commands/` contains Claude Code slash-command wrappers, and `.codex/prompts/` contains matching Codex prompts.
 
 ## Setup, troubleshooting, FAQ
 

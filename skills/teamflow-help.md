@@ -1,10 +1,10 @@
 # teamflow-help
 
-Print a digest of all agent-teamflow slash commands. Run when a teammate has just installed agent-teamflow and forgot what's in it, or whenever someone asks "what does this give me?"
+Print a digest of all agent-teamflow workflows. Run when a teammate has just installed agent-teamflow and forgot what's in it, or whenever someone asks "what does this give me?"
 
 This skill is a static print — no file I/O, no config, no remote calls. It must be kept in sync manually when new commands are added (see CONTRIBUTING.md). The list below is the source of truth.
 
-Run **in the main conversation** — this is interactive feedback for the user. Do not fork.
+Run **in the main conversation** — this is interactive feedback for the user. Do not delegate this workflow.
 
 ---
 
@@ -15,7 +15,7 @@ Run **in the main conversation** — this is interactive feedback for the user. 
 Output the block below exactly. Preserve column alignment so it renders cleanly in a terminal.
 
 ```
-agent-teamflow — 9 slash commands
+agent-teamflow — 9 workflows
 
 Setup
   /teamflow-init    Bootstrap this repo (writes .agent-teamflow, optionally
@@ -53,6 +53,6 @@ That's the whole skill.
 
 ## Hard rules
 
-- **Static output** — do not invent commands, do not omit commands, do not reorder. The list reflects what `setup` registers user-scope; anything else would mislead.
+- **Static output** — do not invent workflows, do not omit workflows, do not reorder. The list reflects what `setup` registers user-scope; anything else would mislead.
 - **No emojis.**
 - **No file modifications.** This skill is read-only.

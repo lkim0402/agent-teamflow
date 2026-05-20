@@ -2,7 +2,7 @@
 
 Interactively bootstrap a repo for agent-teamflow. Detects sensible defaults from `git remote` and existing branches, asks the user for the rest, writes `.agent-teamflow`, and optionally creates personal integration branches on the remote.
 
-Run **in the main conversation** (you need `AskUserQuestion` for the picker steps). Do not fork.
+Run **in the main conversation** because the picker steps require user choices. Do not delegate this workflow.
 
 ---
 
@@ -18,7 +18,7 @@ If it fails: tell the user this command must be run from inside a git repo, and 
 
 ### Step 1. Check for an existing config
 
-If `.agent-teamflow` already exists at the repo root, Read it and use `AskUserQuestion` (single-select):
+If `.agent-teamflow` already exists at the repo root, Read it and use `ask the user` (single-select):
 - `Overwrite — start fresh`
 - `Show current — and exit` (Read and display, then stop)
 - `Cancel — leave it alone` (stop)
@@ -45,7 +45,7 @@ Derive:
 
 ### Step 3. Ask for the core fields
 
-Use `AskUserQuestion` with up to 4 questions per call. Pre-fill defaults from Step 2 where possible.
+Use `ask the user` with up to 4 questions per call. Pre-fill defaults from Step 2 where possible.
 
 **Q1 — Issue tracker** (single-select):
 - `GitHub — gh CLI`
@@ -56,7 +56,7 @@ Recommend the one matching `defaultIssueTracker`.
 **Q2 — Project path:**
 Skip if `defaultProject` was detected — show it back and ask if it's right. If wrong or undetected, ask the user to type the `owner/repo` value.
 
-Use AskUserQuestion single-select:
+Use ask the user single-select:
 - `Use detected: <defaultProject>` (only if detected)
 - `Enter manually`
 
@@ -89,7 +89,7 @@ Owners to register:
   carol → carol-staging
 ```
 
-`AskUserQuestion` single-select:
+`ask the user` single-select:
 - `Looks good — use these`
 - `Let me change a branch name`
 
@@ -128,7 +128,7 @@ git ls-remote --exit-code --heads origin <branch>
 
 Build a list of branches that don't exist yet. If the list is empty, skip this step entirely.
 
-If non-empty, **show the user the exact branches that would be created and ask for explicit approval** via `AskUserQuestion`:
+If non-empty, **show the user the exact branches that would be created and ask for explicit approval** via `ask the user`:
 
 - `Yes — create all listed branches on origin`
 - `No — I will create them myself` (recommended if anyone else might already be pushing — never overwrite)

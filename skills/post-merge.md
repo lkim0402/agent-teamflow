@@ -2,7 +2,7 @@
 
 After merging an integration→staging MR/PR, label its linked issues with the configured "done in staging" label so the issue tracker shows the work has reached staging. Issues stay open until staging→main triggers the tracker's native auto-close.
 
-Run as a **forked agent** — call Agent without `subagent_type` so CLI output stays out of the main conversation. Report only the final summary.
+Run this workflow in an isolated worker if the current agent runtime supports one; otherwise run it in the main session. Keep CLI output concise and report only the final summary.
 
 The label name is read from `.agent-teamflow` at `labels.doneInStaging`. If unset, default to the string `done-in-staging`. All references to `<DONE_LABEL>` below resolve to that value.
 
@@ -74,7 +74,7 @@ gh pr list --state merged --head <INTEGRATION_BRANCH> --base <branches.staging> 
 Filter to MRs/PRs merged within the last 6 hours by the current user.
 - Zero matches → exit with `No recently merged MR/PR found in the last 6 hours.`
 - One match → use it.
-- Multiple matches → AskUserQuestion single-select for the user to pick.
+- Multiple matches → ask the user single-select for the user to pick.
 
 If `$ARGUMENTS` is a number: fetch that specific MR/PR and verify it is merged. Refuse if still open or closed-without-merging.
 

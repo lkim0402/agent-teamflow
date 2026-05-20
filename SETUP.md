@@ -12,27 +12,37 @@ From inside your team's repo root:
 
 ```bash
 git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamflow-tmp \
-  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/skills .agent-teamflow-tmp/CLAUDE.md . \
+  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/.codex .agent-teamflow-tmp/skills .agent-teamflow-tmp/AGENTS.md . \
+  && ln -sf AGENTS.md CLAUDE.md \
   && rm -rf .agent-teamflow-tmp
 ```
 
-Review the added files (`.claude/commands/`, `skills/`, `CLAUDE.md`) and commit them. Claude Code's project-scope discovery picks up the slash commands automatically for anyone who has the repo checked out.
+Review the added files (`.claude/`, `.codex/`, `skills/`, `AGENTS.md`, `CLAUDE.md`) and commit them. Claude Code picks up project-scope slash commands automatically, while Codex reads the shared `AGENTS.md` protocol and prompts.
 
-**Updating in vendor mode.** There's no `/teamflow-update` for this path — re-vendor by running the install command again (it overwrites the same three paths). Diff the changes against your committed copy, then commit the diff.
+**Updating in vendor mode.** There's no `/teamflow-update` for this path — re-vendor by running the install command again (it overwrites the shared paths and symlinks). Diff the changes against your committed copy, then commit the diff.
 
-**Conflict notes.** If your repo already has a `.claude/` directory or a `CLAUDE.md`, `cp -r` will merge / overwrite. Inspect before committing. To preserve your existing `CLAUDE.md`, do the copy, then `git diff CLAUDE.md` and reconcile manually.
+**Conflict notes.** If your repo already has `.claude/`, `.codex/`, or `AGENTS.md`, `cp -r` will merge / overwrite. Inspect before committing. To preserve your existing `AGENTS.md`, do the copy, then `git diff AGENTS.md` and reconcile manually.
 
 ### Global install (alternative)
 
-Slash commands installed user-scope at `~/.claude/commands/`, working in every repo on your machine. Each developer installs and updates independently.
+Runtime adapters are installed user-scope, working in every repo on your machine. Each developer installs and updates independently.
 
 ```bash
-git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.claude/skills/agent-teamflow && ~/.claude/skills/agent-teamflow/setup
+git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-teamflow \
+  && ~/.agent-teamflow/setup --all
 ```
 
-The `setup` script generates user-scope wrappers in `~/.claude/commands/`, rewriting relative paths to absolute paths so the commands work from any repo.
+The `setup` script can install one or both adapters:
 
-**Updating.** Run `/teamflow-update` from Claude Code — it pulls the latest agent-teamflow and re-runs setup. Or manually: `cd ~/.claude/skills/agent-teamflow && git pull && ./setup`.
+```bash
+./setup --all      # default: Claude Code commands + Codex prompts
+./setup --claude   # Claude Code commands only
+./setup --codex    # Codex prompts only
+```
+
+For Claude Code, it generates user-scope wrappers in `~/.claude/commands/`, rewriting relative paths to absolute paths. For Codex, it generates prompts under `${CODEX_HOME:-~/.codex}/prompts/`.
+
+**Updating.** Run `/teamflow-update` from your agent — it pulls the latest agent-teamflow and re-runs setup. Or manually: `cd ~/.agent-teamflow && git pull && ./setup --all`.
 
 ### Choosing between them
 
@@ -44,7 +54,7 @@ Vendor wins when:
 Global wins when:
 - You're evaluating agent-teamflow before committing to it.
 - You want one tool across many repos on your machine.
-- Your team isn't ready to commit shared `.claude/` files to the repo.
+- Your team isn't ready to commit shared agent files to the repo.
 
 Both modes use the same skills and the same `.agent-teamflow` config. You can switch later — to migrate from global to vendor, run the vendor install in your team's repo and commit. To migrate from vendor to global, remove the committed files and run the global installer.
 
@@ -156,57 +166,64 @@ If you're using `owners`, the local part of your email (before `@`) must match a
 ```
 your-repo/
 ├── .agent-teamflow            ← team config
-├── CLAUDE.md                  ← tells Claude to read .agent-teamflow before any skill
+├── AGENTS.md                  ← shared protocol for all agents
+├── CLAUDE.md -> AGENTS.md     ← Claude Code compatibility symlink
+├── .claude/
+│   └── commands/              ← Claude Code wrappers
+├── .codex/
+│   └── prompts/               ← Codex prompts
 ├── skills/                    ← runbooks (source of truth)
 │   ├── teamflow-init.md
 │   ├── resolve.md
 │   └── ...
-├── .claude/
-│   └── commands/              ← project-scope wrappers (one per skill)
-│       ├── teamflow-init.md
-│       ├── resolve.md
-│       └── ...
 └── ... your project files
 ```
 
-Claude Code picks up `.claude/commands/*.md` automatically when run from inside the repo.
+Claude Code picks up `.claude/commands/*.md` automatically when run from inside the repo. Codex can use `AGENTS.md` and the `skills/` runbooks directly.
 
 ### After global install
 
 ```
-~/.claude/
-├── skills/agent-teamflow/    ← source of truth (cloned by the installer)
-│   ├── skills/
-│   │   ├── teamflow-init.md
-│   │   ├── resolve.md
-│   │   └── ...
-│   ├── .claude/commands/      ← project-scope wrappers (used if vendored)
-│   ├── CLAUDE.md
-│   └── setup
-└── commands/                   ← user-scope wrappers (generated by setup)
-    ├── teamflow-init.md
-    ├── resolve.md
-    └── ...
+~/.agent-teamflow/              ← source of truth (cloned by the installer)
+├── AGENTS.md
+├── CLAUDE.md -> AGENTS.md
+├── skills/
+├── .claude/commands/
+├── .codex/prompts/
+└── setup
+
+~/.claude/commands/             ← generated when installing Claude support
+├── teamflow-init.md
+├── resolve.md
+└── ...
+
+~/.codex/prompts/                ← generated when installing Codex support
+├── teamflow-init.md
+├── resolve.md
+└── ...
 ```
 
-Each user-scope command in `~/.claude/commands/` is a one-liner that points Claude Code at the runbook under `~/.claude/skills/agent-teamflow/skills/`.
+Each user-scope Claude command and Codex prompt points at the runbook under `~/.agent-teamflow/skills/`.
 
 ## Updating
 
-**Vendor install** — re-run the vendor install command from the team repo root. It overwrites `.claude/commands/`, `skills/`, and `CLAUDE.md` with the latest from `main`. Diff against your committed copy and commit the changes.
+**Vendor install** — re-run the vendor install command from the team repo root. It overwrites `.claude/`, `.codex/`, `skills/`, `AGENTS.md`, and `CLAUDE.md` with the latest from `main`. Diff against your committed copy and commit the changes.
 
-**Global install** — `/teamflow-update` does the work. Or manually: `cd ~/.claude/skills/agent-teamflow && git pull && ./setup`. `setup` is idempotent — re-running regenerates the user-scope commands from the latest source.
+**Global install** — `/teamflow-update` does the work. Or manually: `cd ~/.agent-teamflow && git pull && ./setup --all`. `setup` is idempotent — re-running regenerates the selected user-scope adapters from the latest source.
 
 ## Uninstalling
 
-**Vendor install** — remove `.claude/commands/`, `skills/`, `CLAUDE.md`, and `.agent-teamflow` from the repo. Commit the deletion.
+**Vendor install** — remove `.claude/`, `.codex/`, `skills/`, `AGENTS.md`, `CLAUDE.md`, and `.agent-teamflow` from the repo. Commit the deletion.
 
 **Global install** — the final lines of `setup`'s output print the exact commands to remove everything it installed. Run those, then delete `.agent-teamflow` from any repo where you configured it.
 
 ## Troubleshooting
 
-**Slash commands don't appear after install.**
+**Claude slash commands don't appear after install.**
 Restart Claude Code (close and reopen). It scans `.claude/commands/` (project-scope, vendor install) and `~/.claude/commands/` (user-scope, global install) on startup. After a vendor install, confirm `ls .claude/commands/teamflow-*.md` from your repo root lists the wrappers. After a global install, confirm `ls ~/.claude/commands/teamflow-*.md`.
+
+**Codex doesn't pick up agent-teamflow globally.**
+Confirm `ls ${CODEX_HOME:-$HOME/.codex}/prompts/teamflow-init.md` exists. If it does not, re-run `~/.agent-teamflow/setup --codex`.
 
 **`/issue` or `/dispatch` fails with an auth error.**
 The issue tracker CLI isn't logged in. Run `gh auth status` (or `glab auth status`) — if it reports "not logged in", run `gh auth login` / `glab auth login` and retry. For GitHub Enterprise or self-hosted GitLab, also set the host (`GH_HOST=ghe.example.com gh auth login` or `glab auth login --hostname gitlab.example.com`).
@@ -224,12 +241,12 @@ Branch protection on `staging` blocks direct pushes. Two options: (a) update pro
 Two feature branches in the same batch touched the same file. The skill halts before pushing the conflicted result — your worktrees are intact. Resolve manually in the affected worktree, commit, then rerun `/git-auto-merge` from that worktree. Going forward, ensure `/issue` keeps "same file in same chunk" so siblings don't collide.
 
 **Setup fails on `bun` or `node` errors.**
-agent-teamflow doesn't use either. If you see those errors you're running gstack's setup by mistake. Re-clone agent-teamflow into a clean path: `git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.claude/skills/agent-teamflow`.
+agent-teamflow doesn't use either. If you see those errors you're running another tool's setup by mistake. Re-clone agent-teamflow into a clean path: `git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-teamflow`.
 
 ## FAQ
 
 **Do I need this if I'm a solo developer?**
-No. The skills still work (see [`examples/solo/`](examples/solo/)), but the value prop is keeping multiple developers' agents from colliding. If it's just you, gstack or vanilla Claude Code skills will serve you better.
+No. The skills still work (see [`examples/solo/`](examples/solo/)), but the value prop is keeping multiple developers' agents from colliding. If it's just you, vanilla Claude Code or Codex workflows may be enough.
 
 **What if my team uses trunk-based development with no staging branch?**
 Set `branches.staging` to `main` (or your equivalent). Skills will merge features straight to `main`. The integration-branch buffer is optional — without `owners`, features go directly to the configured target.
@@ -243,7 +260,7 @@ Yes. `gh` and `glab` both support custom hosts. Authenticate once (`GH_HOST=...`
 **Can I use this in a monorepo?**
 Yes, but the config lives at the repo root only — one `.agent-teamflow` per repo, not per package. The branch-sizing rule in `/issue` becomes more important in a monorepo since touching multiple packages is common.
 
-**What if a teammate doesn't have Claude Code (or refuses to install)?**
+**What if a teammate does not use a supported coding agent (or refuses to install)?**
 Fine. They use git as normal; the skills are just helpful automation for whoever has them. Their feature branches still merge into the shared staging the same way. Just don't put them in `owners` — that field is for people whose agents need a personal lane.
 
 **I committed `.agent-teamflow` and now teammates' agents are confused by my settings.**
