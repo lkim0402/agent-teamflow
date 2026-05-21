@@ -78,31 +78,9 @@ Do not combine global and vendor installs for the same workflow. If a repo vendo
 
 ## See it work
 
-Two developers, two terminals, four parallel agents — same repo, no collisions:
-
-```
-┌─ alice@laptop ────────────────────────┐  ┌─ bob@laptop ──────────────────────────┐
-│ $ claude                              │  │ $ claude                              │
-│ > /resolve                            │  │ > /resolve                            │
-│                                       │  │                                       │
-│ Picked issues #5, #6.                 │  │ Picked issues #8, #9.                 │
-│ Starting 2 workers in worktrees off   │  │ Starting 2 workers in worktrees off   │
-│ origin/alice-staging.                 │  │ origin/bob-staging.                   │
-│                                       │  │                                       │
-│ Batch 1: 2 ready                      │  │ Batch 1: 2 ready                      │
-│   #5  → 5-checkout-validation         │  │   #8  → 8-pagination                  │
-│   #6  → 6-payment-receipts            │  │   #9  → 9-health-check                │
-│                                       │  │                                       │
-│ PR #10: alice-staging → staging       │  │ PR #11: bob-staging   → staging       │
-└───────────────────────────────────────┘  └───────────────────────────────────────┘
-                              \                 /
-                               v               v
-                          ┌────────────────────────┐
-                          │     origin/staging     │
-                          └────────────────────────┘
-```
-
-Four feature branches, four parallel agents, two developers — zero coordination, zero pushes to branches anyone else is writing to.
+<p align="center">
+  <img src="docs/images/agent_teamflow_simple.png" alt="Agent TeamFlow workflow" width="860">
+</p>
 
 ## Highlights
 
