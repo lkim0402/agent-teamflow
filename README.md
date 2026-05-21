@@ -7,6 +7,10 @@
   <img src="https://img.shields.io/badge/team_size-2%2B-orange" alt="Team size 2+">
 </p>
 
+<p align="center">
+  <img src="docs/images/hero.png" alt="agent-teamflow mascots — a team of coding-agent robots" width="240">
+</p>
+
 # agent-teamflow
 
 **Agent workflow runbooks and adapters that let a team's coding agents work in parallel on the same repo without colliding.**
