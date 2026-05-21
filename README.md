@@ -23,6 +23,34 @@ Most agent tooling supercharges one developer. agent-teamflow is the team layer 
 
 If you're solo it still works (see [`examples/solo/`](examples/solo/)), but you probably don't need it.
 
+## See it work
+
+Two developers, two terminals, four parallel agents — same repo, no collisions:
+
+```
+┌─ alice@laptop ────────────────────────┐  ┌─ bob@laptop ──────────────────────────┐
+│ $ claude                              │  │ $ claude                              │
+│ > /resolve                            │  │ > /resolve                            │
+│                                       │  │                                       │
+│ Picked issues #5, #6.                 │  │ Picked issues #8, #9.                 │
+│ Starting 2 workers in worktrees off   │  │ Starting 2 workers in worktrees off   │
+│ origin/alice-staging.                 │  │ origin/bob-staging.                   │
+│                                       │  │                                       │
+│ Batch 1: 2 ready                      │  │ Batch 1: 2 ready                      │
+│   #5  → 5-checkout-validation         │  │   #8  → 8-pagination                  │
+│   #6  → 6-payment-receipts            │  │   #9  → 9-health-check                │
+│                                       │  │                                       │
+│ PR #10: alice-staging → staging       │  │ PR #11: bob-staging   → staging       │
+└───────────────────────────────────────┘  └───────────────────────────────────────┘
+                              \                 /
+                               v               v
+                          ┌────────────────────────┐
+                          │     origin/staging     │
+                          └────────────────────────┘
+```
+
+Four feature branches, four parallel agents, two developers — zero coordination, zero pushes to branches anyone else is writing to.
+
 ## Quick start
 
 agent-teamflow installs two ways. **For a team that commits to the workflow, vendor it into your repo** — everyone gets the same version automatically. For solo evaluation or personal use across many repos, install globally instead.
@@ -142,34 +170,6 @@ resolve     pick up issues assigned to you and implement them in parallel worker
 | Updates | Re-vendor when you want to pull upstream changes | `/teamflow-update` per developer |
 
 Both modes use the same skills and the same config schema. Pick one mode per user/repo. For team repos, prefer vendor mode so everyone sees one committed copy of the workflow.
-
-## See it work
-
-Two developers, two terminals, four parallel agents — same repo, no collisions:
-
-```
-┌─ alice@laptop ────────────────────────┐  ┌─ bob@laptop ──────────────────────────┐
-│ $ claude                              │  │ $ claude                              │
-│ > /resolve                            │  │ > /resolve                            │
-│                                       │  │                                       │
-│ Picked issues #5, #6.                 │  │ Picked issues #8, #9.                 │
-│ Starting 2 workers in worktrees off   │  │ Starting 2 workers in worktrees off   │
-│ origin/alice-staging.                 │  │ origin/bob-staging.                   │
-│                                       │  │                                       │
-│ Batch 1: 2 ready                      │  │ Batch 1: 2 ready                      │
-│   #5  → 5-checkout-validation         │  │   #8  → 8-pagination                  │
-│   #6  → 6-payment-receipts            │  │   #9  → 9-health-check                │
-│                                       │  │                                       │
-│ PR #10: alice-staging → staging       │  │ PR #11: bob-staging   → staging       │
-└───────────────────────────────────────┘  └───────────────────────────────────────┘
-                              \                 /
-                               v               v
-                          ┌────────────────────────┐
-                          │     origin/staging     │
-                          └────────────────────────┘
-```
-
-Four feature branches, four parallel agents, two developers — zero coordination, zero pushes to branches anyone else is writing to.
 
 ## What you get
 
