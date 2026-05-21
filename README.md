@@ -139,37 +139,7 @@ git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-team
 
 Each developer installs separately and updates independently. Behavior is still configured per-repo via `.agent-teamflow`.
 
-Do not combine global and vendor installs for the same workflow. If a repo vendors `.codex/skills/*` and you also have `~/.codex/skills/*` for the same names, Codex may show duplicate skills in `/skills`. Prefer vendor mode for teams; remove the global copy with the uninstall command printed by `setup`.
-
-### Then run a workflow command
-
-Either install path, the workflow is the same. In Claude Code, use slash commands:
-
-```
-/issue       file a single branch-sized issue from a one-line brain dump
-/dispatch    split a bigger brain dump across multiple teammates
-/resolve     pick up issues assigned to you and implement them in parallel workers
-```
-
-In Codex, pick the matching skill from `/skills`:
-
-```
-issue       file a single branch-sized issue from a one-line brain dump
-dispatch    split a bigger brain dump across multiple teammates
-resolve     pick up issues assigned to you and implement them in parallel workers
-```
-
-### Vendor vs. global — which?
-
-|  | Vendor (project-scope) | Global (user-scope) |
-|---|---|---|
-| Versions | Everyone on the team uses the same one (whatever's committed) | Each developer installs and updates independently |
-| Onboarding | New hires get it on day 1 | New hires have to install themselves |
-| Discoverability | `AGENTS.md`, `.claude/`, and `.codex/` are visible in the repo | Nothing in the repo says "we use this" |
-| Repo footprint | Adds shared runtime dirs + 1 config | Just `.agent-teamflow` |
-| Updates | Re-vendor when you want to pull upstream changes | `/teamflow-update` per developer |
-
-Both modes use the same skills and the same config schema. Pick one mode per user/repo. For team repos, prefer vendor mode so everyone sees one committed copy of the workflow.
+Don't combine global and vendor installs for the same workflow — if names overlap, Codex will show duplicate skills.
 
 ## What you get
 
@@ -189,25 +159,19 @@ Nine workflows. Three are lifecycle (`/teamflow-init`, `/teamflow-update`, `/tea
 
 ## How the team workflow works
 
-Skills read one config file (`.agent-teamflow`) at the repo root and adapt to your branching model. You describe your branches and who owns what — the skills do the rest.
-
-The minimum two-branch setup:
+Everything reads from `.agent-teamflow` at the repo root. Two supported branching models:
 
 ```
 feature branches → staging → main
 ```
 
-Personal integration branches (recommended for teams of 2+):
-
 ```
-Alice's feature branches → alice-staging ─┐
-                                           ├→ staging → main
-Bob's feature branches   → bob-staging   ─┘
+Alice's features → alice-staging ─┐
+                                   ├→ staging → main
+Bob's features   → bob-staging   ─┘
 ```
 
-Personal lanes are the multiplayer primitive. Alice and Bob can both have multiple agents running, all pushing to their own lane, without ever pushing to a branch the other is also writing to. When work is ready, each lane merges into the shared `staging` via a normal PR.
-
-If your team calls things differently — `develop` instead of `staging`, `master` instead of `main`, `alice/integration` instead of `alice-staging` — configure those names. The skills don't care what the branches are called.
+Personal lanes are the multiplayer primitive — Alice and Bob each push to their own lane, so agents never collide on a shared branch. Name the branches whatever fits your team; the skills adapt.
 
 ## Examples
 
@@ -216,10 +180,6 @@ If your team calls things differently — `develop` instead of `staging`, `maste
 - [`solo/`](examples/solo/) — one developer, no personal lanes, features land on `staging` directly.
 - [`small-team/`](examples/small-team/) — two developers with personal integration branches, parallel `/resolve` runs.
 - [`larger-team/`](examples/larger-team/) — four developers sharing one `staging` branch, no personal lanes.
-
-## Compatibility
-
-The actual workflow logic lives inside each runtime entrypoint — plain markdown runbooks any agent can read. `AGENTS.md` is the shared protocol. `.claude/commands/*.md` contains the Claude Code slash commands; `.codex/skills/*/SKILL.md` contains the matching Codex skills. Each pair holds the full workflow content, so updating one means updating the other.
 
 ## Setup, troubleshooting, FAQ
 
