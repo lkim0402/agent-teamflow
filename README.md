@@ -29,7 +29,44 @@ agent-teamflow installs two ways. **For a team that commits to the workflow, ven
 
 ### Vendor into your repo (recommended for teams)
 
-From inside your team's repo root:
+From inside your team's repo root. Pick your runtime and follow that path end to end.
+
+---
+
+#### Claude Code only
+
+```bash
+git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamflow-tmp \
+  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/AGENTS.md . \
+  && ln -sf AGENTS.md CLAUDE.md \
+  && rm -rf .agent-teamflow-tmp
+```
+
+Review what was copied, then commit:
+
+```bash
+git add .claude AGENTS.md CLAUDE.md && git commit -m "add agent-teamflow"
+```
+
+---
+
+#### Codex only
+
+```bash
+git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamflow-tmp \
+  && cp -r .agent-teamflow-tmp/.codex .agent-teamflow-tmp/AGENTS.md . \
+  && rm -rf .agent-teamflow-tmp
+```
+
+Review what was copied, then commit:
+
+```bash
+git add .codex AGENTS.md && git commit -m "add agent-teamflow"
+```
+
+---
+
+#### Both Claude Code and Codex
 
 ```bash
 git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamflow-tmp \
@@ -38,27 +75,38 @@ git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamfl
   && rm -rf .agent-teamflow-tmp
 ```
 
-This adds `.claude/commands/`, `.codex/skills/`, `AGENTS.md`, and a `CLAUDE.md -> AGENTS.md` symlink to your repo. Review what was copied, then commit:
+Review what was copied, then commit:
 
 ```bash
 git add .claude .codex AGENTS.md CLAUDE.md && git commit -m "add agent-teamflow"
 ```
 
-Now Claude Code users get project-scope slash commands automatically, and Codex users get matching skills under `/skills` that run the same workflows. New hires onboard on day 1. Version drift disappears.
+---
 
 > **Already have a `.claude/` directory** with your own custom commands? `cp -r` will merge — inspect the result before committing.
 >
 > **Want to merge `AGENTS.md`** with an existing one? After the copy, manually combine the two and delete the conflict.
 
-In your agent, run `/teamflow-init` to write `.agent-teamflow` (your team's config). Then commit that too.
+Then in your agent, run `/teamflow-init` to write `.agent-teamflow` (your team's config). Commit that too.
 
 ### Install globally (alternative — personal use only)
 
-One install on your machine; Claude Code slash commands and Codex skills work in every repo. Use this for solo evaluation or personal workflows, not for a team repo that already vendors agent-teamflow:
+One install on your machine; commands work in every repo. Use this for solo evaluation or personal workflows, not for a team repo that already vendors agent-teamflow.
+
+Pick the variant that matches your runtime:
 
 ```bash
+# Both Claude Code and Codex
 git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-teamflow \
   && ~/.agent-teamflow/setup --all
+
+# Claude Code only
+git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-teamflow \
+  && ~/.agent-teamflow/setup --claude
+
+# Codex only
+git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-teamflow \
+  && ~/.agent-teamflow/setup --codex
 ```
 
 Each developer installs separately and updates independently. Behavior is still configured per-repo via `.agent-teamflow`.
