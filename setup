@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # agent-teamflow setup
-# Installs runtime prompts/commands for Claude Code and/or Codex.
+# Installs runtime adapters for Claude Code and/or Codex.
 
 set -euo pipefail
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 CLAUDE_COMMANDS_DIR="$HOME/.claude/commands"
-CODEX_PROMPTS_DIR="${CODEX_HOME:-$HOME/.codex}/prompts"
+CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
+CODEX_PROMPTS_DIR="$CODEX_HOME_DIR/prompts"
+CODEX_SKILLS_DIR="$CODEX_HOME_DIR/skills"
 
 install_claude=false
 install_codex=false
@@ -16,9 +18,9 @@ usage() {
 Usage: ./setup [--all | --claude | --codex]
 
 Options:
-  --all      Install Claude Code slash commands and Codex prompts (default)
+  --all      Install Claude Code slash commands, Codex prompts, and Codex skills (default)
   --claude   Install Claude Code slash commands only
-  --codex    Install Codex prompts only
+  --codex    Install Codex prompts and skills only
   -h, --help Show this help
 USAGE
 }
@@ -53,14 +55,15 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-if [[ ! -d "$INSTALL_DIR/skills" ]] || [[ ! -f "$INSTALL_DIR/AGENTS.md" ]] || [[ ! -d "$INSTALL_DIR/.claude/commands" ]] || [[ ! -d "$INSTALL_DIR/.codex/prompts" ]]; then
+if [[ ! -d "$INSTALL_DIR/skills" ]] || [[ ! -f "$INSTALL_DIR/AGENTS.md" ]] || [[ ! -d "$INSTALL_DIR/.claude/commands" ]] || [[ ! -d "$INSTALL_DIR/.codex/prompts" ]] || [[ ! -d "$INSTALL_DIR/.codex/skills" ]]; then
     echo "Error: setup must be run from inside the agent-teamflow repo." >&2
-    echo "  expected: $INSTALL_DIR/skills, $INSTALL_DIR/AGENTS.md, $INSTALL_DIR/.claude/commands, and $INSTALL_DIR/.codex/prompts" >&2
+    echo "  expected: $INSTALL_DIR/skills, $INSTALL_DIR/AGENTS.md, $INSTALL_DIR/.claude/commands, $INSTALL_DIR/.codex/prompts, and $INSTALL_DIR/.codex/skills" >&2
     exit 1
 fi
 
 claude_count=0
 codex_count=0
+codex_skill_count=0
 
 if [[ "$install_claude" == true ]]; then
     if [[ ! -d "$INSTALL_DIR/.claude/commands" ]]; then
@@ -89,6 +92,10 @@ if [[ "$install_codex" == true ]]; then
         echo "Error: missing Codex prompts at $INSTALL_DIR/.codex/prompts" >&2
         exit 1
     fi
+    if [[ ! -d "$INSTALL_DIR/.codex/skills" ]]; then
+        echo "Error: missing Codex skills at $INSTALL_DIR/.codex/skills" >&2
+        exit 1
+    fi
 
     mkdir -p "$CODEX_PROMPTS_DIR"
     for prompt_file in "$INSTALL_DIR/.codex/prompts/"*.md; do
@@ -103,6 +110,32 @@ if [[ "$install_codex" == true ]]; then
 
         codex_count=$((codex_count + 1))
     done
+
+    mkdir -p "$CODEX_SKILLS_DIR"
+    for skill_dir in "$INSTALL_DIR/.codex/skills/"*; do
+        [[ -d "$skill_dir" ]] || continue
+        [[ -f "$skill_dir/SKILL.md" ]] || continue
+        name=$(basename "$skill_dir")
+        output_dir="$CODEX_SKILLS_DIR/$name"
+
+        mkdir -p "$output_dir"
+        sed \
+            -e "s|\`AGENTS.md\`|\`$INSTALL_DIR/AGENTS.md\`|g" \
+            -e "s|\`skills/|\`$INSTALL_DIR/skills/|g" \
+            "$skill_dir/SKILL.md" > "$output_dir/SKILL.md"
+
+        if [[ -d "$skill_dir/agents" ]]; then
+            rm -rf "$output_dir/agents"
+            cp -R "$skill_dir/agents" "$output_dir/agents"
+        fi
+
+        codex_skill_count=$((codex_skill_count + 1))
+    done
+
+    if [[ "$codex_skill_count" -eq 0 ]]; then
+        echo "Error: no Codex skills found under $INSTALL_DIR/.codex/skills" >&2
+        exit 1
+    fi
 fi
 
 echo "agent-teamflow setup complete"
@@ -111,13 +144,19 @@ if [[ "$install_claude" == true ]]; then
 fi
 if [[ "$install_codex" == true ]]; then
     echo "  Codex prompts: $codex_count installed into $CODEX_PROMPTS_DIR/"
+    echo "  Codex skills: $codex_skill_count installed into $CODEX_SKILLS_DIR/"
 fi
 echo ""
 echo "Next steps:"
 echo "  1. Open your agent inside any repo you want to use this in."
 echo "  2. Run /teamflow-init to configure that repo (writes .agent-teamflow)."
-echo "  3. Then try /issue, /dispatch, or /resolve."
+echo "  3. Then try /issue in Claude Code, or pick at-issue from /skills in Codex."
 echo ""
 echo "Update later: cd $INSTALL_DIR && git pull && ./setup"
-echo "Uninstall Claude commands: rm $CLAUDE_COMMANDS_DIR/{$(ls "$INSTALL_DIR/.claude/commands/" | sed 's/\.md$//' | paste -sd',' -)}.md"
-echo "Uninstall Codex prompts:  rm $CODEX_PROMPTS_DIR/{$(ls "$INSTALL_DIR/.codex/prompts/" | sed 's/\.md$//' | paste -sd',' -)}.md"
+if [[ "$install_claude" == true ]]; then
+    echo "Uninstall Claude commands: rm $CLAUDE_COMMANDS_DIR/{$(ls "$INSTALL_DIR/.claude/commands/" | sed 's/\.md$//' | paste -sd',' -)}.md"
+fi
+if [[ "$install_codex" == true ]]; then
+    echo "Uninstall Codex prompts:  rm $CODEX_PROMPTS_DIR/{$(ls "$INSTALL_DIR/.codex/prompts/" | sed 's/\.md$//' | paste -sd',' -)}.md"
+    echo "Uninstall Codex skills:   rm -rf $CODEX_SKILLS_DIR/{$(find "$INSTALL_DIR/.codex/skills" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | paste -sd',' -)}"
+fi

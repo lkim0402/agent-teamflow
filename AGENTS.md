@@ -36,6 +36,6 @@ The project may have per-area context documents. Check `AGENTS.md`, `CLAUDE.md`,
 The canonical workflow runbooks live in `skills/`. Tool-specific files are runtime entrypoints:
 
 - Claude Code reads `.claude/commands/*.md`.
-- Codex reads `.codex/prompts/*.md`.
+- Codex reads `.codex/skills/at-*/SKILL.md` after `setup --codex`; `.codex/prompts/*.md` are legacy prompt wrappers.
 
 Keep tool-specific invocation details in `.claude/` and `.codex/` when possible. Keep branch, issue, and merge behavior in `skills/`.

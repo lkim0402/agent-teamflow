@@ -10,17 +10,18 @@ AGENTS.md                  ← shared protocol for all coding agents
 CLAUDE.md -> AGENTS.md     ← Claude Code compatibility symlink
 .claude/commands/          ← Claude Code wrapper sources
 .codex/prompts/            ← Codex prompt sources
+.codex/skills/             ← Codex skill source
 setup                      ← script that installs runtime adapters
 examples/                  ← three narrative walkthroughs (no runnable code)
 ```
 
-Skills are plain markdown runbooks. `AGENTS.md` contains the shared protocol, while `.claude/` and `.codex/` contain tool-specific entrypoints. The `setup` script writes Claude Code wrappers into `~/.claude/commands/` and Codex prompts into `${CODEX_HOME:-~/.codex}/prompts/`.
+Skills are plain markdown runbooks. `AGENTS.md` contains the shared protocol, while `.claude/` and `.codex/` contain tool-specific entrypoints. The `setup` script writes Claude Code wrappers into `~/.claude/commands/`, Codex prompts into `${CODEX_HOME:-~/.codex}/prompts/`, and Codex skills into `${CODEX_HOME:-~/.codex}/skills/at-*/`.
 
 If you're contributing, edit the source files in `skills/`, `AGENTS.md`, `.claude/`, and `.codex/`. User-scope copies are regenerated on every `./setup` run.
 
 ## Adding a new skill
 
-At minimum, update the runbook and the matching wrapper under `.claude/commands/` and `.codex/prompts/`.
+At minimum, update the runbook, the matching wrapper under `.claude/commands/` and `.codex/prompts/`, and the matching thin skill under `.codex/skills/at-<name>/SKILL.md`.
 
 **1. `skills/<name>.md`** — the runbook. Follow the shape used by existing skills:
 
@@ -63,6 +64,8 @@ Arguments: $ARGUMENTS
 
 That's it. Don't put logic in the wrapper — keep it pointing at the runbook so `setup`'s sed rewrite stays trivial.
 
+**3. `.codex/skills/at-<name>/SKILL.md`** — add a thin Codex skill wrapper for direct `/skills` selection. Keep workflow logic in `skills/<name>.md`.
+
 ## Style
 
 - **No emojis** anywhere — runbooks, wrappers, examples, commit messages, output.
@@ -80,6 +83,7 @@ HOME=/tmp/at-test ./setup --all
 ls /tmp/at-test/.claude/commands/
 cat /tmp/at-test/.claude/commands/<name>.md   # verify absolute paths
 ls /tmp/at-test/.codex/prompts/<name>.md
+test -f /tmp/at-test/.codex/skills/at-issue/SKILL.md
 rm -rf /tmp/at-test
 ```
 

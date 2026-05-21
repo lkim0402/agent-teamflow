@@ -1,0 +1,4 @@
+interface:
+  display_name: "at-resolve"
+  short_description: "Implement assigned issues"
+  default_prompt: "Use $at-resolve to pick and implement assigned issues."
