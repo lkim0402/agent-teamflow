@@ -26,10 +26,34 @@ Supported agents: **Claude Code**, **Codex**. Supported issue trackers: **GitHub
 
 [Setup](SETUP.md) · [Examples](examples/) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [Protocol (AGENTS.md)](AGENTS.md) · [License](LICENSE)
 
-New install? Start here: [Install (recommended)](#install-recommended)
+## See it work
 
-Preferred setup: run `/teamflow-init` in your agent inside the repo.
-`/teamflow-init` guides you step by step through detecting defaults from `git remote`, picking the issue tracker and branches, and (optionally) creating per-developer integration branches. Works on **macOS, Linux, and Windows (via WSL2)**.
+<p align="center">
+  <img src="docs/images/agent_teamflow_simple.png" alt="Agent TeamFlow workflow" width="860">
+</p>
+
+Two developers, two terminals, zero coordination:
+
+```
+┌─ alice@laptop ────────────────────────┐  ┌─ bob@laptop ──────────────────────────┐
+│ $ claude                              │  │ $ claude                              │
+│ > /resolve                            │  │ > /resolve                            │
+│                                       │  │                                       │
+│ Picked issues #5, #6.                 │  │ Picked issues #8, #9.                 │
+│ Starting 2 workers in worktrees off   │  │ Starting 2 workers in worktrees off   │
+│ origin/alice-staging.                 │  │ origin/bob-staging.                   │
+│                                       │  │                                       │
+│   #5  → 5-checkout-validation  done   │  │   #8  → 8-pagination          done   │
+│   #6  → 6-payment-receipts     done   │  │   #9  → 9-health-check        done   │
+│                                       │  │                                       │
+│ PR #10: alice-staging → staging       │  │ PR #11: bob-staging → staging         │
+└───────────────────────────────────────┘  └───────────────────────────────────────┘
+                              \                 /
+                               v               v
+                          ┌────────────────────────┐
+                          │     origin/staging     │
+                          └────────────────────────┘
+```
 
 ## Install (recommended)
 
@@ -75,12 +99,6 @@ This installs **9 Claude Code slash commands** into `~/.claude/commands/` and **
 Upgrading? Run `/teamflow-update` from any agent. Or manually: `cd ~/.agent-teamflow && git pull && ./setup`.
 
 Do not combine global and vendor installs for the same workflow. If a repo vendors `.codex/skills/*` and you also have `~/.codex/skills/*` for the same names, Codex may show duplicate skills in `/skills`. Prefer vendor mode for teams.
-
-## See it work
-
-<p align="center">
-  <img src="docs/images/agent_teamflow_simple.png" alt="Agent TeamFlow workflow" width="860">
-</p>
 
 ## Highlights
 
