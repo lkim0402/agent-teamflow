@@ -1,18 +1,19 @@
 ---
-description: After merging an integration→staging MR/PR, label its linked issues with done-in-staging.
+name: post-merge
+description: Use when the user explicitly selects the post-merge skill or wants to label linked issues after merging an integration-to-staging MR/PR.
 ---
 
-Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below.
-
 # post-merge
+
+Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below. Treat the user's remaining request text as `$ARGUMENTS`.
+
+---
 
 After merging an integration→staging MR/PR, label its linked issues with the configured "done in staging" label so the issue tracker shows the work has reached staging. Issues stay open until staging→main triggers the tracker's native auto-close.
 
 Run this workflow in an isolated worker if the current agent runtime supports one; otherwise run it in the main session. Keep CLI output concise and report only the final summary.
 
 The label name is read from `.agent-teamflow` at `labels.doneInStaging`. If unset, default to the string `done-in-staging`. All references to `<DONE_LABEL>` below resolve to that value.
-
----
 
 ## Prerequisite
 
@@ -138,5 +139,3 @@ Issues are still OPEN — will auto-close when staging → main flows.
 (you)               → review the MR/PR in the UI, merge it
 /post-merge         → label all linked issues with <DONE_LABEL>
 ```
-
-Arguments: $ARGUMENTS

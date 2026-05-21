@@ -1,16 +1,17 @@
 ---
-description: Split a brain dump into parallel issues for multiple team members, write a workflow file, and push.
+name: dispatch
+description: Use when the user explicitly selects the dispatch skill or wants to split a larger brain dump into parallel issues for multiple team members, write a workflow file, and push.
 ---
 
-Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below.
-
 # dispatch
+
+Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below. Treat the user's remaining request text as `$ARGUMENTS`.
+
+---
 
 Split a brain dump into parallel issues for multiple team members, write a workflow file, and push.
 
 Run this workflow in an isolated worker if the current agent runtime supports one; otherwise run it in the main session. Keep intermediate docs/CLI output concise and report only the final result (workflow file path, issue URLs, commit/push status).
-
----
 
 ## What this command does
 
@@ -133,5 +134,3 @@ Do not touch integration branches, staging, or main.
 - If an issue creation fails: keep going for the rest, note the failure in the final report. Do NOT roll back.
 - If the workflow file already exists at the exact timestamp: append `-2`, `-3`, etc.
 - If git push fails: report the error and the local commit SHA; do not retry blindly.
-
-Arguments: $ARGUMENTS

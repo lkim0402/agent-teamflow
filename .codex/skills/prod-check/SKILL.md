@@ -1,11 +1,13 @@
 ---
-description: Pre-production code review scoped to your recent commits. Checks impact, contracts, auth, stability, and regressions.
-argument-hint: "[optional: 'since yesterday' | 'mr 42' | 'pr 42' | 'SHA1..SHA2' | leave blank for today's commits]"
+name: prod-check
+description: Use when the user explicitly selects the prod-check skill or wants a pre-production code review scoped to recent commits, checking impact, contracts, auth, stability, and regressions.
 ---
 
-Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below.
-
 # prod-check
+
+Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below. Treat the user's remaining request text as `$ARGUMENTS`.
+
+---
 
 Pre-production high-stakes code review scoped to today's work (or an explicit range). Analyzes the diff for impact on existing dependencies, contract breakage (API/DB/types), missing env vars, auth/security gaps, error handling, and regression coverage.
 
@@ -13,13 +15,9 @@ Use when asked to "prod check", "production review", "is this safe to ship", or 
 
 Run this workflow in an isolated worker if the current agent runtime supports one; otherwise run it in the main session. Keep diff and grep output concise. Report only the final findings table (or `READY FOR PROD`) to the user.
 
----
-
 ## Core principle: impact over implementation
 
 Do not just check if the new code works. Check if the new code **breaks existing, untouched parts of the system**. The goal is to catch failure modes that automated tests and the author missed.
-
----
 
 ## Setup — scope the diff to your work, not the full base-branch backlog
 
@@ -74,8 +72,6 @@ Read `.agent-teamflow` to get `branches.main` and `branches.staging`.
 
 6. **Cross-reference touched files against the full repo for callers/importers** — when checking impact, `grep` the entire repo for usages. The scope limits *what you review*, not *where you look for callers*.
 
----
-
 ## Checklist
 
 1. **Impact & Side Effects** — For every modified function, component, exported type, or hook, grep the repo for importers/callers. Flag any change to inputs, outputs, or types that breaks those call sites.
@@ -89,8 +85,6 @@ Read `.agent-teamflow` to get `branches.main` and `branches.staging`.
 5. **Stability & Error Handling** — New async logic has `try/catch` or `.catch`. User-facing failures show an error state, not a blank screen. No swallowed errors. Transactions still atomic.
 
 6. **Testing & Regressions** — New logic has test coverage. Bug fixes have a regression test. Existing tests still mapped to new code paths.
-
----
 
 ## Output format
 
@@ -110,5 +104,3 @@ After the table, expand each row with the relevant code snippet and reasoning.
 If no risks remain after a deep impact analysis, output exactly:
 
 **READY FOR PROD**
-
-Arguments: $ARGUMENTS

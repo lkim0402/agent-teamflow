@@ -1,0 +1,4 @@
+interface:
+  display_name: "dispatch"
+  short_description: "Split work across teammates"
+  default_prompt: "Use $dispatch to split this work across teammates."

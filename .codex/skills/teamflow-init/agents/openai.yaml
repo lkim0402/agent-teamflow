@@ -1,0 +1,4 @@
+interface:
+  display_name: "teamflow-init"
+  short_description: "Configure agent-teamflow"
+  default_prompt: "Use $teamflow-init to configure this repo for agent-teamflow."

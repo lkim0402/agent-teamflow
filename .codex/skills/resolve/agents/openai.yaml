@@ -1,0 +1,4 @@
+interface:
+  display_name: "resolve"
+  short_description: "Implement assigned issues"
+  default_prompt: "Use $resolve to pick and implement assigned issues."

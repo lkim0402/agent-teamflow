@@ -1,0 +1,4 @@
+interface:
+  display_name: "teamflow-help"
+  short_description: "Show workflow help"
+  default_prompt: "Use $teamflow-help to show available agent-teamflow workflows."

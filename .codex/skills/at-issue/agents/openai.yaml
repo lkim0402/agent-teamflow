@@ -1,4 +1,0 @@
-interface:
-  display_name: "at-issue"
-  short_description: "Create branch-sized issues"
-  default_prompt: "Use $at-issue to create branch-sized issues from this request."

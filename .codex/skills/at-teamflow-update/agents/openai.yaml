@@ -1,4 +1,0 @@
-interface:
-  display_name: "at-teamflow-update"
-  short_description: "Update agent-teamflow"
-  default_prompt: "Use $at-teamflow-update to update the agent-teamflow install."

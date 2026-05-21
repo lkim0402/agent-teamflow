@@ -1,0 +1,4 @@
+interface:
+  display_name: "issue"
+  short_description: "Create branch-sized issues"
+  default_prompt: "Use $issue to create branch-sized issues from this request."

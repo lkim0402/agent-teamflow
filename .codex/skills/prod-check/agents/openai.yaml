@@ -1,0 +1,4 @@
+interface:
+  display_name: "prod-check"
+  short_description: "Review recent production risk"
+  default_prompt: "Use $prod-check to review recent production risk."

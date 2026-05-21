@@ -1,16 +1,17 @@
 ---
-description: Interactively bootstrap the current repo for agent-teamflow. Detects defaults from git remote, asks for the rest, writes .agent-teamflow, optionally creates personal integration branches.
+name: teamflow-init
+description: Use when the user explicitly selects the teamflow-init skill or wants to bootstrap the current repo for agent-teamflow by writing .agent-teamflow and optionally creating personal integration branches.
 ---
 
-Read `AGENTS.md`, then follow the workflow below. This command does NOT require an existing `.agent-teamflow` — it writes one.
-
 # teamflow-init
+
+Read `AGENTS.md`, then follow the workflow below. This workflow does not require an existing `.agent-teamflow`; it writes one. Treat the user's remaining request text as `$ARGUMENTS`.
+
+---
 
 Interactively bootstrap a repo for agent-teamflow. Detects sensible defaults from `git remote` and existing branches, asks the user for the rest, writes `.agent-teamflow`, and optionally creates personal integration branches on the remote.
 
 Run **in the main conversation** because the picker steps require user choices. Do not delegate this workflow.
-
----
 
 ## Execution
 
@@ -197,5 +198,3 @@ Next steps:
 - **Never overwrite `.agent-teamflow` without the `Overwrite` selection in Step 1.**
 - **Do not commit or push the config file** — the user decides when to stage it.
 - **No emojis.**
-
-Arguments: $ARGUMENTS

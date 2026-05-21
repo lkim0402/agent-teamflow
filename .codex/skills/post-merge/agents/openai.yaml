@@ -1,0 +1,4 @@
+interface:
+  display_name: "post-merge"
+  short_description: "Mark issues done in staging"
+  default_prompt: "Use $post-merge to label issues after a staging merge."

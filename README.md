@@ -33,18 +33,18 @@ From inside your team's repo root:
 
 ```bash
 git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamflow-tmp \
-  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/.codex .agent-teamflow-tmp/skills .agent-teamflow-tmp/AGENTS.md . \
+  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/.codex .agent-teamflow-tmp/AGENTS.md . \
   && ln -sf AGENTS.md CLAUDE.md \
   && rm -rf .agent-teamflow-tmp
 ```
 
-This adds `.claude/commands/`, `.codex/prompts/`, `.codex/skills/`, `skills/`, `AGENTS.md`, and a `CLAUDE.md -> AGENTS.md` symlink to your repo. Review what was copied, then commit:
+This adds `.claude/commands/`, `.codex/skills/`, `AGENTS.md`, and a `CLAUDE.md -> AGENTS.md` symlink to your repo. Review what was copied, then commit:
 
 ```bash
-git add .claude .codex skills AGENTS.md CLAUDE.md && git commit -m "add agent-teamflow"
+git add .claude .codex AGENTS.md CLAUDE.md && git commit -m "add agent-teamflow"
 ```
 
-Now Claude Code users get project-scope slash commands automatically, and Codex users get matching `at-*` skills that route to the same runbooks. New hires onboard on day 1. Version drift disappears.
+Now Claude Code users get project-scope slash commands automatically, and Codex users get matching skills under `/skills` that run the same workflows. New hires onboard on day 1. Version drift disappears.
 
 > **Already have a `.claude/` directory** with your own custom commands? `cp -r` will merge — inspect the result before committing.
 >
@@ -54,7 +54,7 @@ In your agent, run `/teamflow-init` to write `.agent-teamflow` (your team's conf
 
 ### Install globally (alternative — personal use only)
 
-One install on your machine; Claude Code slash commands and Codex `at-*` skills work in every repo. Use this for solo evaluation or personal workflows, not for a team repo that already vendors agent-teamflow:
+One install on your machine; Claude Code slash commands and Codex skills work in every repo. Use this for solo evaluation or personal workflows, not for a team repo that already vendors agent-teamflow:
 
 ```bash
 git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-teamflow \
@@ -63,7 +63,7 @@ git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-team
 
 Each developer installs separately and updates independently. Behavior is still configured per-repo via `.agent-teamflow`.
 
-Do not combine global and vendor installs for the same workflow. If a repo vendors `.codex/skills/at-*` and you also have `~/.codex/skills/at-*`, Codex may show duplicate skills in `/skills`. Prefer vendor mode for teams; remove the global copy with the uninstall command printed by `setup`.
+Do not combine global and vendor installs for the same workflow. If a repo vendors `.codex/skills/*` and you also have `~/.codex/skills/*` for the same names, Codex may show duplicate skills in `/skills`. Prefer vendor mode for teams; remove the global copy with the uninstall command printed by `setup`.
 
 ### Then run a workflow command
 
@@ -78,9 +78,9 @@ Either install path, the workflow is the same. In Claude Code, use slash command
 In Codex, pick the matching skill from `/skills`:
 
 ```
-at-issue       file a single branch-sized issue from a one-line brain dump
-at-dispatch    split a bigger brain dump across multiple teammates
-at-resolve     pick up issues assigned to you and implement them in parallel workers
+issue       file a single branch-sized issue from a one-line brain dump
+dispatch    split a bigger brain dump across multiple teammates
+resolve     pick up issues assigned to you and implement them in parallel workers
 ```
 
 ### Vendor vs. global — which?
@@ -89,8 +89,8 @@ at-resolve     pick up issues assigned to you and implement them in parallel wor
 |---|---|---|
 | Versions | Everyone on the team uses the same one (whatever's committed) | Each developer installs and updates independently |
 | Onboarding | New hires get it on day 1 | New hires have to install themselves |
-| Discoverability | `AGENTS.md`, `skills/`, `.claude/`, and `.codex/` are visible in the repo | Nothing in the repo says "we use this" |
-| Repo footprint | Adds shared runbooks, runtime dirs + 1 config | Just `.agent-teamflow` |
+| Discoverability | `AGENTS.md`, `.claude/`, and `.codex/` are visible in the repo | Nothing in the repo says "we use this" |
+| Repo footprint | Adds shared runtime dirs + 1 config | Just `.agent-teamflow` |
 | Updates | Re-vendor when you want to pull upstream changes | `/teamflow-update` per developer |
 
 Both modes use the same skills and the same config schema. Pick one mode per user/repo. For team repos, prefer vendor mode so everyone sees one committed copy of the workflow.
@@ -125,7 +125,7 @@ Four feature branches, four parallel agents, two developers — zero coordinatio
 
 ## What you get
 
-Nine workflows. Three are lifecycle (`/teamflow-init`, `/teamflow-update`, `/teamflow-help`); the others are the actual team workflow. Claude Code exposes them as slash commands; Codex exposes matching `at-*` skills in `/skills`. Codex custom prompt slash commands are not reliable in current Codex CLI releases, so use the `at-*` skills there.
+Nine workflows. Three are lifecycle (`/teamflow-init`, `/teamflow-update`, `/teamflow-help`); the others are the actual team workflow. Claude Code exposes them as slash commands; Codex exposes matching skills in `/skills`. Codex custom prompt slash commands are not reliable in current Codex CLI releases, so use the skills there.
 
 | Command | What it does |
 |---|---|
@@ -171,7 +171,7 @@ If your team calls things differently — `develop` instead of `staging`, `maste
 
 ## Compatibility
 
-The actual workflow logic lives in `skills/` — plain markdown runbooks any agent can read. `AGENTS.md` is the shared protocol. `.claude/commands/` contains Claude Code slash-command wrappers, `.codex/skills/at-*/` contains matching Codex skill wrappers, and `.codex/prompts/` is kept as a legacy prompt wrapper source.
+The actual workflow logic lives inside each runtime entrypoint — plain markdown runbooks any agent can read. `AGENTS.md` is the shared protocol. `.claude/commands/*.md` contains the Claude Code slash commands; `.codex/skills/*/SKILL.md` contains the matching Codex skills. Each pair holds the full workflow content, so updating one means updating the other.
 
 ## Setup, troubleshooting, FAQ
 

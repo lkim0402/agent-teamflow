@@ -1,18 +1,19 @@
 ---
-description: Print a digest of all agent-teamflow slash commands available in this install.
+name: teamflow-help
+description: Use when the user explicitly selects the teamflow-help skill or wants a digest of all agent-teamflow commands/workflows available in this install.
 ---
 
-Read `AGENTS.md`, then follow the workflow below. This command does NOT require an `.agent-teamflow` — it works in any repo.
-
 # teamflow-help
+
+Read `AGENTS.md`, then follow the workflow below. This workflow does not require `.agent-teamflow`; it works in any repo. Treat the user's remaining request text as `$ARGUMENTS`.
+
+---
 
 Print a digest of all agent-teamflow workflows. Run when a teammate has just installed agent-teamflow and forgot what's in it, or whenever someone asks "what does this give me?"
 
 This skill is a static print — no file I/O, no config, no remote calls. It must be kept in sync manually when new commands are added (see CONTRIBUTING.md). The list below is the source of truth.
 
 Run **in the main conversation** — this is interactive feedback for the user. Do not delegate this workflow.
-
----
 
 ## Execution
 
@@ -62,5 +63,3 @@ That's the whole skill.
 - **Static output** — do not invent workflows, do not omit workflows, do not reorder. The list reflects what `setup` registers user-scope; anything else would mislead.
 - **No emojis.**
 - **No file modifications.** This skill is read-only.
-
-Arguments: $ARGUMENTS

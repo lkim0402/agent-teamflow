@@ -1,16 +1,17 @@
 ---
-description: Commit, push feature branch, merge into your integration branch, then open or update an MR/PR to staging.
+name: git-auto-merge
+description: Use when the user explicitly selects the git-auto-merge skill or wants to commit, push a feature branch, merge into their integration branch, then open or update an MR/PR to staging.
 ---
 
-Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below.
-
 # git-auto-merge
+
+Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below. Treat the user's remaining request text as `$ARGUMENTS`.
+
+---
 
 Commit, push the feature branch, merge into the owner's integration branch (auto-detected from `.agent-teamflow`), then open or update an MR/PR from that integration branch to staging.
 
 Run this workflow in an isolated worker if the current agent runtime supports one; otherwise run it in the main session. Keep intermediate git output concise and report only the final result (branch push status, MR/PR URL, and which integration branch was used) to the user.
-
----
 
 ## Setup
 
@@ -151,5 +152,3 @@ Cleanup is up to you. If this was an ephemeral worktree branch and you want to d
 **Exception (with explicit per-turn approval):**
 
 Deletion is permitted only if the user explicitly requests it in the current turn AND you ask via ask the user with each item listed by its exact path or branch name, AND the user clicks Approve. Approval does NOT persist across turns.
-
-Arguments: $ARGUMENTS

@@ -1,0 +1,4 @@
+interface:
+  display_name: "git-auto-merge"
+  short_description: "Push and merge toward staging"
+  default_prompt: "Use $git-auto-merge to push and merge this branch."

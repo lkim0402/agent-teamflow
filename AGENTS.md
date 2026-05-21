@@ -33,9 +33,9 @@ The project may have per-area context documents. Check `AGENTS.md`, `CLAUDE.md`,
 
 ## Runtime adapters
 
-The canonical workflow runbooks live in `skills/`. Tool-specific files are runtime entrypoints:
+Each workflow is fully self-contained inside its runtime entrypoint:
 
 - Claude Code reads `.claude/commands/*.md`.
-- Codex reads `.codex/skills/at-*/SKILL.md` after `setup --codex`; `.codex/prompts/*.md` are legacy prompt wrappers.
+- Codex reads `.codex/skills/*/SKILL.md` after `setup --codex`.
 
-Keep tool-specific invocation details in `.claude/` and `.codex/` when possible. Keep branch, issue, and merge behavior in `skills/`.
+When you change a workflow's behavior (branch, issue, or merge logic), update both runtime entrypoints so Claude Code and Codex stay aligned.

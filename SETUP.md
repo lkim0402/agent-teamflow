@@ -12,12 +12,12 @@ From inside your team's repo root:
 
 ```bash
 git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git .agent-teamflow-tmp \
-  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/.codex .agent-teamflow-tmp/skills .agent-teamflow-tmp/AGENTS.md . \
+  && cp -r .agent-teamflow-tmp/.claude .agent-teamflow-tmp/.codex .agent-teamflow-tmp/AGENTS.md . \
   && ln -sf AGENTS.md CLAUDE.md \
   && rm -rf .agent-teamflow-tmp
 ```
 
-Review the added files (`.claude/`, `.codex/`, `skills/`, `AGENTS.md`, `CLAUDE.md`) and commit them. Claude Code picks up project-scope slash commands automatically, while Codex uses matching `at-*` skills to route explicit requests to the same runbooks.
+Review the added files (`.claude/`, `.codex/`, `AGENTS.md`, `CLAUDE.md`) and commit them. Claude Code picks up project-scope slash commands automatically, while Codex exposes matching skills under `/skills` running the same workflows.
 
 **Updating in vendor mode.** There's no `/teamflow-update` for this path — re-vendor by running the install command again (it overwrites the shared paths and symlinks). Diff the changes against your committed copy, then commit the diff.
 
@@ -35,16 +35,16 @@ git clone --depth 1 https://github.com/lkim0402/agent-teamflow.git ~/.agent-team
 The `setup` script can install one or both adapters:
 
 ```bash
-./setup --all      # default: Claude Code commands + Codex prompts/skills
+./setup --all      # default: Claude Code commands + Codex skills
 ./setup --claude   # Claude Code commands only
-./setup --codex    # Codex prompts + skills only
+./setup --codex    # Codex skills only
 ```
 
-For Claude Code, it generates user-scope wrappers in `~/.claude/commands/`, rewriting relative paths to absolute paths. For Codex, it generates legacy prompts under `${CODEX_HOME:-~/.codex}/prompts/` and skills under `${CODEX_HOME:-~/.codex}/skills/at-*/`.
+For Claude Code, it generates user-scope commands in `~/.claude/commands/`, rewriting the relative `AGENTS.md` reference to an absolute path. For Codex, it generates skills under `${CODEX_HOME:-~/.codex}/skills/<name>/` the same way.
 
 **Updating.** Run `/teamflow-update` from your agent — it pulls the latest agent-teamflow and re-runs setup. Or manually: `cd ~/.agent-teamflow && git pull && ./setup --all`.
 
-**Avoid duplicate Codex skills.** Do not combine global and vendor installs for the same workflow. If a repo vendors `.codex/skills/at-*` and you also have `~/.codex/skills/at-*`, Codex may show duplicate skills in `/skills`. Prefer vendor mode for teams; remove the global copy with the uninstall command printed by `setup`.
+**Avoid duplicate Codex skills.** Do not combine global and vendor installs for the same workflow. If a repo vendors `.codex/skills/*` and you also have `~/.codex/skills/*` for the same names, Codex may show duplicate skills in `/skills`. Prefer vendor mode for teams; remove the global copy with the uninstall command printed by `setup`.
 
 ### Choosing between them
 
@@ -58,7 +58,7 @@ Global wins when:
 - You want one tool across many repos on your machine.
 - Your team isn't ready to commit shared agent files to the repo.
 
-Both modes use the same skills and the same `.agent-teamflow` config. Pick one mode per user/repo. For team repos, prefer vendor mode so everyone sees one committed copy of the workflow. To migrate from global to vendor, run the vendor install in your team's repo, commit it, then remove the global `at-*` skills. To migrate from vendor to global, remove the committed files and run the global installer.
+Both modes use the same skills and the same `.agent-teamflow` config. Pick one mode per user/repo. For team repos, prefer vendor mode so everyone sees one committed copy of the workflow. To migrate from global to vendor, run the vendor install in your team's repo, commit it, then remove the global Codex skills (`rm -rf ~/.codex/skills/{dispatch,issue,...}`). To migrate from vendor to global, remove the committed files and run the global installer.
 
 ## `.agent-teamflow` config reference
 
@@ -171,21 +171,16 @@ your-repo/
 ├── AGENTS.md                  ← shared protocol for all agents
 ├── CLAUDE.md -> AGENTS.md     ← Claude Code compatibility symlink
 ├── .claude/
-│   └── commands/              ← Claude Code wrappers
+│   └── commands/              ← Claude Code slash commands (full workflow content)
 ├── .codex/
-│   ├── prompts/               ← legacy Codex prompt wrappers
 │   └── skills/
-│       ├── at-issue/          ← Codex skill wrappers
-│       ├── at-resolve/
+│       ├── issue/             ← Codex skills (full workflow content)
+│       ├── resolve/
 │       └── ...
-├── skills/                    ← runbooks (source of truth)
-│   ├── teamflow-init.md
-│   ├── resolve.md
-│   └── ...
 └── ... your project files
 ```
 
-Claude Code picks up `.claude/commands/*.md` automatically when run from inside the repo. Codex can use `AGENTS.md`, the `at-*` skills, and the `skills/` runbooks directly. Current Codex CLI releases do not reliably expose custom prompts as slash commands, so select `at-issue`, `at-resolve`, and related skills from `/skills`.
+Each `.claude/commands/*.md` and `.codex/skills/*/SKILL.md` is self-contained — the full workflow lives inside it, so no other directory needs to be vendored. Claude Code picks up `.claude/commands/*.md` automatically when run from inside the repo. Codex picks up the matching skills in `/skills`. Current Codex CLI releases do not reliably expose custom prompts as slash commands, so select `issue`, `resolve`, and related skills from `/skills`.
 
 ### After global install
 
@@ -193,11 +188,9 @@ Claude Code picks up `.claude/commands/*.md` automatically when run from inside 
 ~/.agent-teamflow/              ← source of truth (cloned by the installer)
 ├── AGENTS.md
 ├── CLAUDE.md -> AGENTS.md
-├── skills/
 ├── .claude/commands/
-├── .codex/prompts/
-├── .codex/skills/at-issue/
-├── .codex/skills/at-resolve/
+├── .codex/skills/issue/
+├── .codex/skills/resolve/
 ├── .codex/skills/...
 └── setup
 
@@ -206,28 +199,23 @@ Claude Code picks up `.claude/commands/*.md` automatically when run from inside 
 ├── resolve.md
 └── ...
 
-~/.codex/prompts/                ← generated when installing Codex support
-├── teamflow-init.md
-├── resolve.md
-└── ...
-
 ~/.codex/skills/                 ← generated when installing Codex support
-├── at-issue/SKILL.md
-├── at-resolve/SKILL.md
+├── issue/SKILL.md
+├── resolve/SKILL.md
 └── ...
 ```
 
-Each user-scope Claude command, Codex prompt, and Codex skill points at the runbooks under `~/.agent-teamflow/skills/`.
+`setup` copies each entrypoint file verbatim (rewriting only the `AGENTS.md` reference to an absolute path). The user-scope copy holds the full workflow content — no further indirection.
 
 ## Updating
 
-**Vendor install** — re-run the vendor install command from the team repo root. It overwrites `.claude/`, `.codex/`, `skills/`, `AGENTS.md`, and `CLAUDE.md` with the latest from `main`. Diff against your committed copy and commit the changes.
+**Vendor install** — re-run the vendor install command from the team repo root. It overwrites `.claude/`, `.codex/`, `AGENTS.md`, and `CLAUDE.md` with the latest from `main`. Diff against your committed copy and commit the changes.
 
 **Global install** — `/teamflow-update` does the work. Or manually: `cd ~/.agent-teamflow && git pull && ./setup --all`. `setup` is idempotent — re-running regenerates the selected user-scope adapters from the latest source.
 
 ## Uninstalling
 
-**Vendor install** — remove `.claude/`, `.codex/`, `skills/`, `AGENTS.md`, `CLAUDE.md`, and `.agent-teamflow` from the repo. Commit the deletion.
+**Vendor install** — remove `.claude/`, `.codex/`, `AGENTS.md`, `CLAUDE.md`, and `.agent-teamflow` from the repo. Commit the deletion.
 
 **Global install** — the final lines of `setup`'s output print the exact commands to remove everything it installed. Run those, then delete `.agent-teamflow` from any repo where you configured it.
 
@@ -237,7 +225,7 @@ Each user-scope Claude command, Codex prompt, and Codex skill points at the runb
 Restart Claude Code (close and reopen). It scans `.claude/commands/` (project-scope, vendor install) and `~/.claude/commands/` (user-scope, global install) on startup. After a vendor install, confirm `ls .claude/commands/teamflow-*.md` from your repo root lists the wrappers. After a global install, confirm `ls ~/.claude/commands/teamflow-*.md`.
 
 **Codex doesn't pick up agent-teamflow globally.**
-Confirm `ls ${CODEX_HOME:-$HOME/.codex}/skills/at-issue/SKILL.md` exists. If it does not, re-run `~/.agent-teamflow/setup --codex`. In Codex, pick `at-issue`, `at-resolve`, and related skills from `/skills`, not `/issue`.
+Confirm `ls ${CODEX_HOME:-$HOME/.codex}/skills/issue/SKILL.md` exists. If it does not, re-run `~/.agent-teamflow/setup --codex`. In Codex, pick `issue`, `resolve`, and related skills from `/skills`, not `/issue`.
 
 **`/issue` or `/dispatch` fails with an auth error.**
 The issue tracker CLI isn't logged in. Run `gh auth status` (or `glab auth status`) — if it reports "not logged in", run `gh auth login` / `glab auth login` and retry. For GitHub Enterprise or self-hosted GitLab, also set the host (`GH_HOST=ghe.example.com gh auth login` or `glab auth login --hostname gitlab.example.com`).

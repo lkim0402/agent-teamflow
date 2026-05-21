@@ -1,16 +1,17 @@
 ---
-description: Pick open issues assigned to you and implement them in parallel. Each gets its own worktree + branch. Stops at local commits — run /git-auto-merge to ship.
+name: resolve
+description: Use when the user explicitly selects the resolve skill or wants to pick open issues assigned to them and implement them in parallel; each issue gets its own worktree and branch.
 ---
 
-Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below.
-
 # resolve
+
+Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below. Treat the user's remaining request text as `$ARGUMENTS`.
+
+---
 
 Pick open issues assigned to you and implement them in parallel. Each issue gets its own worktree + branch. Stops at local commits — you run `/git-auto-merge` from each worktree to ship.
 
 Orchestrate this workflow in the main conversation because it needs user interaction. Only the per-issue implementation work may run in isolated workers.
-
----
 
 ## What this command does
 
@@ -33,8 +34,6 @@ Orchestrate this workflow in the main conversation because it needs user interac
 - empty → list mode (pick from open assigned issues)
 - single integer `42` → skip picker, go straight to issue #42
 - multiple integers `42 43 44` → skip picker, start one implementation worker per issue when available (still capped at 3)
-
----
 
 ## Execution
 
@@ -367,5 +366,3 @@ Queue:
 - User picks 0 issues → no-op, exit cleanly.
 - Worker returns `STATUS: blocked` → note in Step 5's one-liner, capture reason for Step 8's table. Do not auto-retry.
 - Worker returns malformed output → mark as `STATUS: unknown`, surface its last 200 chars in Step 8's table.
-
-Arguments: $ARGUMENTS

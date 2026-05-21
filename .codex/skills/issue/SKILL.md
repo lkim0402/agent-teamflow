@@ -1,10 +1,13 @@
 ---
-description: Create one or more branch-sized issues from a brain dump. Drafts, previews, then posts with your confirmation.
+name: issue
+description: Use when the user explicitly selects the issue skill or wants to create one or more branch-sized GitHub/GitLab issues from a brain dump; drafts, previews, then posts with confirmation.
 ---
 
-Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below.
-
 # issue
+
+Read `AGENTS.md`, then read `.agent-teamflow` from the repo root, then follow the workflow below. Treat the user's remaining request text as `$ARGUMENTS`.
+
+---
 
 Create one or more issues from a single brain dump. Splits the input into branch-sized chunks (so `/resolve` can pick each up as one worker/branch without batch-merge conflicts), drafts each, asks for confirmation, then posts.
 
@@ -13,8 +16,6 @@ Create one or more issues from a single brain dump. Splits the input into branch
 The heavy work (splitting, composing bodies) may run in an isolated worker when the current agent runtime supports one. The confirmation prompt and issue creation run in the main conversation.
 
 Never post any issue without explicit user confirmation.
-
----
 
 ## Input
 
@@ -151,5 +152,3 @@ A chunk is "branch-sized" if it satisfies all three:
 - **Never post without explicit user confirmation.**
 - **No code changes, no dev server, no commits.** This skill only touches the issue tracker.
 - **No emojis.**
-
-Arguments: $ARGUMENTS

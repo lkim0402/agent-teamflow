@@ -5,18 +5,23 @@ All notable changes to agent-teamflow are documented here. Format based on [Keep
 ## [Unreleased]
 
 ### Added
-- Shared `AGENTS.md` protocol plus Codex prompts under `.codex/prompts/`.
-- Codex skill entrypoints under `.codex/skills/at-*/` so current Codex CLI users can pick workflows explicitly from `/skills`.
-- Runtime entrypoints now live directly under `.claude/commands/` and `.codex/prompts/`; `CLAUDE.md` is a symlink to `AGENTS.md`, and `CODEX.md` is not used.
+- Shared `AGENTS.md` protocol read by both Claude Code and Codex entrypoints.
+- Codex skill entrypoints under `.codex/skills/<name>/` so current Codex CLI users can pick workflows explicitly from `/skills`.
 - `/teamflow-help` — prints a static digest of all installed agent-teamflow slash commands. Useful for teammates who just ran the installer and want to see what they got.
 - Troubleshooting and FAQ sections in `SETUP.md` covering the most likely onboarding failures (auth, missing branches, branch protection, monorepos, GHE, trunk-based dev).
 
 ### Changed
-- `setup` now supports `--all`, `--claude`, and `--codex`, installing Claude Code commands and/or Codex prompts plus Codex skills.
+- `setup` now supports `--all`, `--claude`, and `--codex`, installing Claude Code commands and/or Codex skills.
+- Workflow content is now inlined into each runtime entrypoint (`.claude/commands/*.md` and `.codex/skills/*/SKILL.md`) instead of being referenced from a shared `skills/` directory. Each entrypoint is self-contained.
+- Codex skills no longer carry the `at-` prefix — directories renamed from `.codex/skills/at-<name>/` to `.codex/skills/<name>/`, with matching frontmatter, headings, and `agents/openai.yaml` updates. The `/skills` picker now shows `issue`, `resolve`, `dispatch`, etc. directly.
 - Runbooks now use runtime-neutral wording for workers, approval prompts, and effort classification.
-- **Vendor install is now the recommended path for teams.** README leads with vendoring agent-teamflow into the team repo (skills committed, everyone on the same version, new hires onboard automatically). Global install is documented as the alternative for solo evaluation and per-developer use.
+- **Vendor install is now the recommended path for teams.** README leads with vendoring agent-teamflow into the team repo (workflows committed, everyone on the same version, new hires onboard automatically). Global install is documented as the alternative for solo evaluation and per-developer use.
 - README has a vendor-vs-global comparison table to help users pick.
 - SETUP.md reorganized: install paths first, with separate Updating/Uninstalling guidance for each mode.
+
+### Removed
+- `skills/` directory (canonical runbooks) — replaced by the inlined content inside each runtime entrypoint.
+- `.codex/prompts/` directory (legacy prompt wrappers) — Codex now uses `.codex/skills/*/SKILL.md` directly.
 
 ## [0.1.0] - 2026-05-19
 
@@ -39,4 +44,4 @@ Initial public release.
 
 ### Notes
 - GitHub and GitLab are both supported via the `issueTracker` config flag.
-- Skills are agent-agnostic markdown runbooks in `skills/`; `.claude/commands/` is a thin Claude Code adapter that the `setup` script propagates user-scope.
+- At this release, workflow logic lived in `skills/` and `.claude/commands/` held thin wrappers that the `setup` script propagated user-scope (later collapsed; see Unreleased).

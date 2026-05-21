@@ -1,16 +1,17 @@
 ---
-description: Pull the latest agent-teamflow into the install dir and re-register slash commands.
+name: teamflow-update
+description: Use when the user explicitly selects the teamflow-update skill or wants to pull the latest agent-teamflow into the install directory and re-register runtime adapters.
 ---
 
-Read `AGENTS.md`, then follow the workflow below. This command does NOT require an `.agent-teamflow` — it updates the install itself.
-
 # teamflow-update
+
+Read `AGENTS.md`, then follow the workflow below. This workflow does not require `.agent-teamflow`; it updates the install itself. Treat the user's remaining request text as `$ARGUMENTS`.
+
+---
 
 Pull the latest agent-teamflow into the install directory and re-register the user-scope runtime adapters. Use this when a teammate ships a new skill or a runbook is updated upstream.
 
 Run this workflow in an isolated worker if the current agent runtime supports one; otherwise run it in the main session. Keep git/setup output concise and report only the final summary.
-
----
 
 ## Setup
 
@@ -83,5 +84,3 @@ If no new commits: `Already up to date at <PRE_SUBJECT>.` (and skip everything e
 - **Never run `git reset --hard`** or any destructive git op to "fix" the install. If something is wrong, tell the user.
 - **Never edit files in the install dir** — the only mutation is `git pull` and re-running `./setup`.
 - **No emojis.**
-
-Arguments: $ARGUMENTS
