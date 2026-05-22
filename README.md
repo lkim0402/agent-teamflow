@@ -168,6 +168,32 @@ Personal lanes are the multiplayer primitive. Alice and Bob can both have multip
 
 If your team calls things differently — `develop` instead of `staging`, `master` instead of `main`, `alice/integration` instead of `alice-staging` — configure those names. Workflows don't care what the branches are called.
 
+Here's how `/resolve` moves through a session:
+
+```mermaid
+graph LR
+    Start([Start /resolve]) --> Intake[1. Backlog Analysis & Routing]
+
+    subgraph Execution ["Parallel Engine (Max 3 Tasks)"]
+        Intake --> Core[2. Isolated Git Worktrees]
+    end
+
+    Core --> Merge[3. Sequential Batch Merge]
+    Merge --> Shipping[4. Consolidated Single MR]
+    Shipping --> Choice{Queue Empty?}
+
+    Choice -- "No (Next Batch)" --> Intake
+    Choice -- "Yes" --> Cleanup[5. Cleanup & Local Sync]
+    Cleanup --> End([Session Complete])
+
+    style Execution fill:#f6f8fa,stroke:#0550ae,stroke-dasharray: 5 5,stroke-width:2px
+    style Core fill:#ddf4ff,stroke:#0969da,stroke-width:1.5px
+    style Merge fill:#dafbe1,stroke:#1a7f37,stroke-width:1.5px
+    style Shipping fill:#fff8c5,stroke:#9a6700,stroke-width:1.5px
+    style Start fill:#24292e,stroke:#24292e,color:#fff
+    style End fill:#24292e,stroke:#24292e,color:#fff
+```
+
 ## Vendor vs. global — which?
 
 |  | Vendor (project-scope) | Global (user-scope) |
