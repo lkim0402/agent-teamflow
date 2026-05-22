@@ -1,7 +1,7 @@
-# 🤝 agent-teamflow — Multi-Agent Team Workflow
+#  agent-teamflow — Team level harness
 
 <p align="center">
-  <img src="docs/images/hero.png" alt="agent-teamflow mascots — a team of coding-agent robots" width="240">
+  <img src="docs/images/hero.png" alt="agent-teamflow mascots — a team of coding-agent robots" width="1000">
 </p>
 
 <p align="center">
@@ -239,10 +239,6 @@ rm -rf /tmp/at-test /tmp/at-test-codex
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the conventions around adding new workflows.
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=lkim0402/agent-teamflow&type=date)](https://www.star-history.com/#lkim0402/agent-teamflow&type=date)
 
 ## Origin
 
