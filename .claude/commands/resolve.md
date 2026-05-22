@@ -16,7 +16,7 @@ Orchestrate this workflow in the main conversation because it needs user interac
 
 1. Read `.agent-teamflow` and resolve the current owner + integration branch.
 2. Fetch open issues assigned to that user (or use the `<id>` arg if given).
-3. Let the user pick up to **3 issues** to tackle now.
+3. Show the queue with effort tiers (XS → XL) and let the user pick up to **3 issues**.
 4. Start one isolated implementation worker per picked issue when the current agent runtime supports parallel workers. Each worker:
    - runs in its own worktree
    - creates a branch off `origin/<INTEGRATION_BRANCH>`
@@ -94,36 +94,85 @@ Parse the JSON. Capture `id/number`, `title`, `url`, `labels`, and the first 200
 
 **Filter out** any issue whose `labels` array contains the `labels.doneInStaging` value from `.agent-teamflow` (default `done-in-staging`). Those are waiting for the staging→main flow and have no remaining work.
 
-Sort remaining issues by id ascending.
+**Also filter out in-flight issues** — work already merged into `<INTEGRATION_BRANCH>` but not yet labeled because the MR/PR hasn't merged to staging yet. Without this, running `/resolve` shortly after a session would resurface issues whose implementation is already on the integration branch.
 
-If the filtered list is empty: tell the user and stop.
+Detection: scan commit messages on `origin/<INTEGRATION_BRANCH>` since `origin/<branches.staging>` for `#<id>` references:
+
+```bash
+git fetch origin <branches.staging> <INTEGRATION_BRANCH>
+in_flight_ids=$(git log origin/<branches.staging>..origin/<INTEGRATION_BRANCH> --format=%B \
+                | grep -oE '#[0-9]+' | tr -d '#' | sort -u)
+```
+
+Drop any issue whose id is in `in_flight_ids`.
+
+Sort remaining issues by id ascending. If the filtered list is empty: tell the user and stop.
+
+**Compute effort tier per issue.** For each remaining issue, derive a score from the title and first 200 chars of body — no extra API call needed.
+
+Scoring (apply all rules, sum the points):
+
+- **file_paths** — count distinct file-path-like tokens in the body. A token counts if it ends in `.ts` / `.tsx` / `.js` / `.jsx` / `.py` / `.go` / `.rs` / `.sql` / `.md` / `.json`, OR starts with `src/` / `lib/` / `apps/` / `packages/` / `docs/`. Cap at 25.
+- **db_layer** — `+3` if body contains any of: `migration`, `schema`, `join table`, `backfill`, `ALTER TABLE`, `CREATE TABLE`, `unique index`, `seed`.
+- **cross_layer** — `+2` if body mentions 2 or more of: `router`, `schema`, `component`, `page`, `middleware`, `api`, `service`, `model`, `controller`, `view`.
+- **body_length** — `+1` if body > 1500 chars.
+
+Tier mapping:
+
+| score | tier | rough estimate |
+|-------|------|----------------|
+| ≤2    | XS   | ~5 min         |
+| 3–5   | S    | ~15 min        |
+| 6–9   | M    | ~30 min        |
+| 10–14 | L    | ~60 min        |
+| 15+   | XL   | ~2 hr+         |
+
+Store `{ id, tier, score }` per issue for use in Steps 2.5 and 3.
+
+### Step 2.5. Queue overview
+
+Before the picker, print a plain-text overview of every issue in the filtered queue with its tier. Sorted by id descending (newest first):
+
+```
+Queue overview (N issues):
+
+  #<id>  <tier>  <estimate>   <title (truncated to ~60 chars)>
+  ...
+
+Total estimated time: ~<sum> min
+```
+
+For the total, use the midpoint of each tier's range (XS=5, S=15, M=30, L=60, XL=120 minutes).
 
 ### Step 3. Pick issues
 
 **If ids were passed in $ARGUMENTS:** use those directly (cap at 3; if more, take the first 3 and tell the user).
 
-**If list mode and ≤4 issues:** ask the user with `multiSelect: true`, one option per issue. Label: `#<id> <title>` (truncate at ~60 chars). Description: first sentence of issue body. Question: "Which issues to tackle now? (max 3)"
+**If list mode and ≤4 issues:** ask the user with `multiSelect: true`, one option per issue. Label: `#<id> <tier> ~<estimate> — <title>` (truncate title so full label stays ≤70 chars). Description: first sentence of issue body. Question: "Which issues to tackle now? (max 3)"
 
-**If list mode and >4 issues:** present a numbered list and ask the user to reply with comma-separated numbers. Parse the reply. Cap at 3.
+**If list mode and >4 issues:** show the 4 newest (sort by id descending) as AskUserQuestion options using the same label format. List older issues in the question text so the user can reference them via the auto-added "Other" free-text input. Parse "Other" as comma- or space-separated ids. Merge with multiSelect picks, dedupe, cap at 3. Warn if any "Other" id isn't in the current queue.
 
 If the user picks 0: stop, no-op.
 
-### Step 3.5. Assign effort per issue
+### Step 3.5. Confirm effort per issue
 
-Fetch the full issue body for each picked issue. Classify the implementation effort — first match wins:
+For each picked issue, fetch the full body if not already available:
 
-**High effort** — for complex, high-judgment work:
-- Issue body > 500 characters, OR
-- Labels contain any of: `complex`, `architecture`, `security`, `auth`, `refactor`, `migration`, `perf`, `performance`, OR
-- Title or body contains (case-insensitive): `refactor`, `redesign`, `migrate`, `race condition`, `auth`, `permission`, `security`, `transaction`, `concurrent`
+```bash
+# GitLab
+glab issue view <id> --output json
 
-**Default effort** — everything else.
+# GitHub
+gh issue view <id> --json number,title,body,labels
+```
 
-Print a one-liner before implementation: e.g. `Effort assignments: #42 -> high, #43 -> default`
+Re-score using the full body (same rules as Step 2 — the Step 2 score used only the first 200 chars; the full body may shift the tier). Update `{ id, tier, score }` if changed.
+
+Print a one-liner before spawning workers: e.g. `Effort tiers: #42 -> M (~30 min), #43 -> XS (~5 min)`
 
 ### Step 4. Start implementation workers
 
-Launch all implementation workers in parallel when the current agent runtime supports safe parallel work. Otherwise process the selected issues sequentially. Each implementation must use the effort assigned in Step 3.5 and the briefing template below.
+Launch all implementation workers in parallel when the current agent runtime supports safe parallel work. Otherwise process the selected issues sequentially. Each worker uses the effort tier assigned in Step 3.5 and the briefing template below.
 
 ### Fork briefing template
 
@@ -326,15 +375,76 @@ If approved, execute in this order:
 2. Worktrees (full cleanup only): `git -C <parent-repo> worktree remove -f -f <path>`
 3. Local branches: `git -C <parent-repo> branch -D <branch>`
 
+### Step 7.6. Continue with another batch?
+
+After cleanup, re-fetch the queue. If issues remain, offer to start another batch in the same session instead of making the user re-run `/resolve`.
+
+**7.6a — Re-fetch + filter + re-score.** Run Step 2's full pipeline:
+- Fetch open assigned issues.
+- Drop `done-in-staging`-labeled issues.
+- Drop in-flight ids (re-scan `origin/<branches.staging>..origin/<INTEGRATION_BRANCH>`).
+- Subtract the session's processed-ids set (so blocked/unknown issues from earlier batches don't resurface).
+- Compute effort tier per remaining issue.
+
+**Skip Step 7.6 entirely** if the resulting queue is empty — go straight to Step 8.
+
+**7.6b — Show the remaining queue overview** (same format as Step 2.5):
+
+```
+Batch <N> shipped → MR/PR <url> updated, worktrees cleaned.
+
+<M> issue(s) remain in your queue:
+
+  #<id>  <tier>  <estimate>   <title>
+  ...
+
+Total estimated time: ~<sum> min
+```
+
+**7.6c — Ask whether to continue** (ask the user, single-select):
+- `Yes — start another batch` (description: lists up to 3 of the remaining issues inline)
+- `No — done for now` (description: "Falls through to the final summary; re-run /resolve later.")
+
+**7.6d — On `Yes`**: loop back to Step 3. Do NOT re-run Steps 1 or 2. The session's processed-ids and ready-worktrees accumulators carry forward.
+
+**7.6e — On `No`**: fall through to Step 7.7.
+
+### Step 7.7. Sync local checkout to origin
+
+The batch-merge in Step 7c uses a temp worktree — the user's main checkout is intentionally untouched. After merging, offer to pull so the dev server can pick up the new code.
+
+**Skip Step 7.7 entirely** if Step 7b's choice was `Skip` (no merges happened).
+
+**7.7a — Detect main checkout state.** Derive the parent repo from a ready worktree (`git -C <worktree-path> rev-parse --git-common-dir | xargs dirname`), then:
+
+```bash
+git -C $MAIN_REPO symbolic-ref --short HEAD
+git -C $MAIN_REPO status --porcelain
+git -C $MAIN_REPO rev-list --count HEAD..origin/<INTEGRATION_BRANCH>
+```
+
+- **On integration branch + clean + behind ≥1 commit** → ask, default Yes.
+- **On integration branch + dirty** → ask, warn pull may merge on top of local changes.
+- **Not on integration branch** → print a note and skip the prompt.
+- **Already up to date** → print one line and skip the prompt.
+
+**7.7b — Ask (if applicable)** (ask the user, single-select):
+- `Yes — pull now` (description: first ~3 incoming commit subjects)
+- `Skip — pull manually later` (description: `git pull --no-rebase origin <INTEGRATION_BRANCH>`)
+
+**7.7c — On `Yes`**: run `git -C $MAIN_REPO pull --no-rebase origin <INTEGRATION_BRANCH>`. If conflicts, stop and report. On success: `Local checkout synced to <new HEAD short SHA>.`
+
+**7.7d — On `Skip`**: print `Local checkout is N commits behind — pull when ready.` and fall through.
+
 ### Step 8. Final summary
 
 Display ONCE at the very end — a single consolidated table:
 
 ```
-| Issue | Effort | Status  | Branch         | Files | Commit  | Merge      | Cleanup      | Summary                      |
-|-------|--------|---------|----------------|-------|---------|------------|--------------|------------------------------|
-| #13   | default| ready   | 13-fix-tooltip | 2     | abc123d | merged     | branch+wt rm | Fixed tooltip overlap        |
-| #14   | high   | blocked | -              | -     | -       | -          | -            | Build error — see worker notes |
+| Issue | Tier | Status  | Branch         | Files | Commit  | Merge      | Cleanup      | Summary                        |
+|-------|------|---------|----------------|-------|---------|------------|--------------|--------------------------------|
+| #13   | XS   | ready   | 13-fix-tooltip | 2     | abc123d | merged     | branch+wt rm | Fixed tooltip overlap          |
+| #14   | M    | blocked | -              | -     | -       | -          | -            | Build error — see worker notes |
 ```
 
 After the table:
