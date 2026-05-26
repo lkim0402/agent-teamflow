@@ -17,14 +17,17 @@
   <img src="https://img.shields.io/badge/team_size-2%2B-orange?style=for-the-badge" alt="Team size 2+">
 </p>
 
-**agent-teamflow** is a _team layer for coding agents_ that ships with your repo.
-It is a config file, a branching convention, and nine workflows that let two or more developers' agents file separate issues, push to separate branches, and merge cleanly into shared staging — without coordinating manually.
-
-If you want multiple developers running coding agents on the same repo in parallel without stomping on each other, this is it.
+**agent-teamflow** is a team workflow harness for coding agents, created for multiple developers working on one codebase. It automates the full cycle from issue to merged PR/MR and gives each developer their own branch lane — so multiple agents *from each developer* can work on the same repo in parallel without collisions.
 
 Supported agents: **Claude Code**, **Codex**. Supported issue trackers: **GitHub** (`gh` CLI), **GitLab** (`glab` CLI).
 
 [Setup](SETUP.md) · [Examples](examples/) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [Protocol (AGENTS.md)](AGENTS.md) · [License](LICENSE)
+
+## Why I built this
+
+During my internship, my teammate and I were both running Claude Code agents on the same repo simultaneously. Before `agent-teamflow`, every session looked the same: manually prompt the agent to fetch issues, wait, manually prompt it to start working, wait, manually prompt it to open an MR/PR when done — and repeat that whole sequence every time. On top of that, we had no real coordination layer between us. We'd constantly interrupt each other with "hey, what are you working on?" just to avoid touching the same files. The agents were fast, we were the bottleneck.
+
+`agent-teamflow` automates that entire coordination layer. `/resolve` handles the full cycle: fetch issues, implement, branch, merge — in one command. The branching convention gives each developer their own lane so agents never collide without us having to manually check in. We stopped being the bottleneck.
 
 ## See it work
 
@@ -265,10 +268,6 @@ rm -rf /tmp/at-test /tmp/at-test-codex
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the conventions around adding new workflows.
-
-## Origin
-
-agent-teamflow grew out of running multiple Claude Code agents in parallel against the same team repo and watching them collide on shared branches. The little robot crew on the README is the visual shorthand — many agents, one repo, no merge-conflict horror.
 
 ## Community
 
