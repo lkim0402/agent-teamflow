@@ -35,6 +35,12 @@ During my internship, my teammate and I were both running Claude Code agents on 
   <img src="docs/images/agent_teamflow_simple.png" alt="Agent TeamFlow workflow" width="860">
 </p>
 
+A real `/resolve` session — pick issues, parallel workers in worktrees, batch merge, one MR (sped up):
+
+<p align="center">
+  <img src="docs/images/resolve-demo.gif" alt="A /resolve session: pick issues, parallel workers, batch merge, one MR" width="860">
+</p>
+
 Two developers, two terminals, zero coordination:
 
 ```
