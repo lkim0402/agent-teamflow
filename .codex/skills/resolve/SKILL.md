@@ -153,7 +153,7 @@ For the total, use the midpoint of each tier's range (XS=5, S=15, M=30, L=60, XL
 
 If the user picks 0: stop, no-op.
 
-### Step 3.5. Confirm effort per issue
+### Step 3.5. Confirm effort and assign model per issue
 
 For each picked issue, fetch the full body if not already available:
 
@@ -169,9 +169,20 @@ Re-score using the full body (same rules as Step 2 — the Step 2 score used onl
 
 Print a one-liner before spawning workers: e.g. `Effort tiers: #42 -> M (~30 min), #43 -> XS (~5 min)`
 
+**Assign a model per issue (only if the runtime supports per-worker model selection — e.g. Claude Code's Agent tool; skip this entirely on runtimes that don't, like Codex).** Classify each issue and apply the rules in order — first match wins:
+
+**Stronger model** (e.g. `model: "opus"`) — complex, high-judgment work:
+- Issue body > 500 characters, OR
+- Labels contain any of: `complex`, `architecture`, `security`, `auth`, `refactor`, `migration`, `perf`, `performance`, OR
+- Title or body contains any of (case-insensitive): `refactor`, `redesign`, `migrate`, `race condition`, `auth`, `permission`, `security`, `transaction`, `concurrent`
+
+**Default model** (e.g. `model: "sonnet"`) — everything else.
+
+Record `{ id, model }` for each issue. Print a one-liner before spawning: e.g. `Model assignments: #42 → opus, #43 → sonnet`
+
 ### Step 4. Start implementation workers
 
-Launch all implementation workers in parallel when the current agent runtime supports safe parallel work. Otherwise process the selected issues sequentially. Each worker uses the effort tier assigned in Step 3.5 and the briefing template below.
+Launch all implementation workers in parallel when the current agent runtime supports safe parallel work. Otherwise process the selected issues sequentially. Each worker uses the effort tier and model (if assigned) from Step 3.5 and the briefing template below.
 
 ### Fork briefing template
 
@@ -199,7 +210,7 @@ If the project has per-area context documents (check AGENTS.md for a routing tab
 ## Implement
 - Make the changes required by the issue's acceptance criteria.
 - Do NOT run the dev server (other workers may be running in parallel; ports may collide).
-- Type-check is fine; skip the full test suite to keep parallel runs sane.
+- **Before committing, run the typecheck on the files you changed** (read the project's scripts — usually a `typecheck` script, or a lint script that includes it). If it reports errors in code you touched, fix them before reporting `STATUS: ready`. Typecheck is parallel-safe (reads files only, no DB/port). Still skip the full test suite — that runs once post-merge.
 
 ## Commit
 - `git add` only the files you intentionally changed (never blanket `-A`).
@@ -278,6 +289,15 @@ ask the user (single-select):
 - `Skip — don't merge any`
 
 #### 7c. Batch-merge execution
+
+**Staging-drift re-check first (mid-session fix guard).** The Step 1d sync is a point-in-time snapshot of `<branches.staging>` taken at session start. If a fix lands on staging *during* the session (e.g. someone else ships a hotfix the workers' work depends on or conflicts with), the workers built on a now-stale base and the integration branch is missing it. Re-fetch and compare before merging:
+
+```bash
+git fetch origin <branches.staging> <INTEGRATION_BRANCH>
+git log origin/<INTEGRATION_BRANCH>..origin/<branches.staging> --oneline
+```
+
+If the output is non-empty, staging advanced since the session-start sync. Ask the owner (single-select): "`<branches.staging>` gained N commit(s) since this session started — re-sync into `<INTEGRATION_BRANCH>` before merging? (Avoids shipping work built on a stale base / inheriting bugs staging already fixed.)" Options: `Yes — re-sync now` (run the Step 1d temp-worktree merge, then continue) / `Skip — merge as-is`. If the output is empty, proceed silently.
 
 Capture `PRE_MERGE_HEAD` first:
 ```bash
@@ -360,6 +380,32 @@ Steps:
 No emojis. Do not modify files. Do not commit. Do not push.
 ```
 
+Display the findings inline, noting the scope (`<PRE_MERGE_HEAD short SHA>..<INTEGRATION_BRANCH>`, this session only). The MR/PR is **still open**. If checks are green, fall through to Step 7.5 (cleanup).
+
+**If checks failed or prod-check reported blockers**, do NOT silently fall through. Ask the user (single-select):
+
+- `Ignore — proceed to cleanup (default)` — the result ships as-is; fix later
+- `Fix now` — start ONE isolated worker to fix on `<INTEGRATION_BRANCH>`, then re-run the same checks
+- `Hold — stop here` — leave the MR/PR open, skip cleanup (Step 7.5) and local sync (Step 7.7), go straight to Step 8 so worktrees stay on disk for manual inspection
+
+**On `Fix now` — bounded fix loop (max 2 attempts):**
+
+1. Set up a temp worktree on the integration branch tip (fixes belong on the integration branch, since that's what the MR/PR ships — not on the soon-to-be-cleaned feature worktrees):
+   ```bash
+   git fetch origin <INTEGRATION_BRANCH>
+   git worktree add /tmp/<INTEGRATION_BRANCH>-fix-wt origin/<INTEGRATION_BRANCH> -b <INTEGRATION_BRANCH>-fix-tmp
+   ```
+2. Start ONE isolated worker (cwd = the temp fix worktree) with: the failing check output, the diff scope `<PRE_MERGE_HEAD>..origin/<INTEGRATION_BRANCH>`, and instructions to fix ONLY the failure, commit with `fix(<scope>): <summary>`, push to `<INTEGRATION_BRANCH>` (the MR/PR auto-updates), and report `STATUS: fixed` or `STATUS: blocked`.
+3. Clean up the temp fix worktree:
+   ```bash
+   git worktree remove -f /tmp/<INTEGRATION_BRANCH>-fix-wt
+   git branch -D <INTEGRATION_BRANCH>-fix-tmp
+   ```
+4. Re-run the post-merge checks on the new tip.
+5. **Green now** → fall through to Step 7.5. **Still failing and attempts < 2** → loop back to 1. **Still failing after 2 attempts OR the fix worker returned `STATUS: blocked`** → STOP looping, report the remaining failure, and behave like `Hold` (skip 7.5/7.7, jump to Step 8) so the user takes over manually.
+
+The 2-attempt cap is mandatory — never loop indefinitely on a failure the worker can't crack.
+
 ### Step 7.5. Clean up merged worktrees + branches (with approval)
 
 Ask for explicit approval before deleting anything. List every item by exact name/path.
@@ -432,6 +478,15 @@ git -C $MAIN_REPO rev-list --count HEAD..origin/<INTEGRATION_BRANCH>
 - `Skip — pull manually later` (description: `git pull --no-rebase origin <INTEGRATION_BRANCH>`)
 
 **7.7c — On `Yes`**: run `git -C $MAIN_REPO pull --no-rebase origin <INTEGRATION_BRANCH>`. If conflicts, stop and report. On success: `Local checkout synced to <new HEAD short SHA>.`
+
+**7.7c-bis — New-migration guard (local DB schema).** Code reaches the local checkout via the pull, but DB migrations are typically applied by CI on deploy — NOT locally. A freshly-pulled feature that added a column will have the code but not the schema, and any query touching it fails locally. After a successful pull, detect whether the pulled diff added a migration:
+
+```bash
+git -C $MAIN_REPO diff --name-only <pre-pull HEAD>..HEAD \
+  | grep -E '(migrations?/.*\.(sql|ts|js|py)$|db/migrate/|alembic/versions/)'
+```
+
+If it matches, the local DB is now behind the schema. Find the project's migrate command (check package.json scripts / Makefile / project docs — e.g. a `db:migrate` script) and ask (single-select): "This pull added a new DB migration (`<migration name>`). Apply it to your local DB so the merged feature is testable locally?" Options: `Yes — run <migrate command>` (default) / `Skip — apply manually later` (note: features hitting the new column/table will error locally until applied). On `Yes`, run it from `$MAIN_REPO` and confirm completion. If no migration was added or the project has no migration setup, skip this step silently.
 
 **7.7d — On `Skip`**: print `Local checkout is N commits behind — pull when ready.` and fall through.
 

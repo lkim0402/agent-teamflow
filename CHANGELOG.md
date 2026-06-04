@@ -5,6 +5,14 @@ All notable changes to agent-teamflow are documented here. Format based on [Keep
 ## [Unreleased]
 
 ### Added
+- `/resolve` queue overview with XS–XL effort tiers and time estimates, scored from issue body signals (file paths, DB/cross-layer keywords, length).
+- `/resolve` in-flight issue detection — issues already merged into the integration branch but not yet labeled `done-in-staging` are filtered from the picker.
+- `/resolve` continue loop — after cleanup, re-fetches the queue and offers another batch in the same session.
+- `/resolve` local checkout sync — after merging, offers to pull the integration branch into the main checkout, with a new-migration guard that offers to run the project's migrate command when the pulled diff added a DB migration.
+- `/resolve` staging-drift re-check — before batch-merging, re-fetches staging and offers a re-sync if it advanced mid-session.
+- `/resolve` failed-checks gate — failing post-merge checks now prompt Ignore / Fix now (bounded fix loop, max 2 attempts) / Hold instead of silently falling through to cleanup.
+- `/resolve` per-issue model assignment — complex issues (long body, refactor/security/migration signals) get a stronger model, on runtimes that support per-worker model selection (e.g. Claude Code); skipped elsewhere.
+- `/resolve` implementation workers now typecheck their changed files before committing (full test suite still deferred to post-merge).
 - Shared `AGENTS.md` protocol read by both Claude Code and Codex entrypoints.
 - Codex skill entrypoints under `.codex/skills/<name>/` so current Codex CLI users can pick workflows explicitly from `/skills`.
 - `/teamflow-help` — prints a static digest of all installed agent-teamflow slash commands. Useful for teammates who just ran the installer and want to see what they got.

@@ -71,7 +71,7 @@ Both developers open their coding agents in the same repo, at the same time.
 The agent fetches Alice's open issues (#5, #6). She picks both. The agent checks whether `alice-staging` is behind `staging` — it is (Bob merged a doc fix yesterday). It asks Alice if she wants to sync; she clicks **Yes — sync now**. Then it starts two parallel workers:
 
 ```
-Effort assignments: #5 -> default, #6 -> default
+Effort tiers: #5 -> S (~15 min), #6 -> XS (~5 min)
 
 Batch 1: 2 ready
 
