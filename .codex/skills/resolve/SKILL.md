@@ -28,6 +28,23 @@ Orchestrate this workflow in the main conversation because it needs user interac
 5. Collect all results and show a summary table.
 6. **Stop.** Do not push, do not open MRs. User runs `/git-auto-merge` from each worktree when ready.
 
+## Quiet execution (applies to every step)
+
+The questions, queue overviews, and summary tables below are the *intended* user-facing surface of this command. Everything else — the plumbing — should produce as little transcript noise as possible. These rules bind the **main conversation** and **plumbing-only workers** (the MR/PR worker, the post-merge check worker). They do NOT apply to implementation workers — their granular tool calls never enter the main transcript and are useful progress/debugging signal:
+
+- **Batch commands.** Where a step lists several shell commands, run them as ONE shell call (joined with `&&` or a small inline script), not one tool call per line. One step ≈ one shell call.
+- **Quiet flags.** Always use `git fetch -q`, `git push -q`, `git merge -q`, `git checkout -q`, and `git worktree add/remove` with stdout discarded where safe. Errors still surface on stderr — that's what we want.
+- **Never dump raw JSON.** Request only the fields a step needs. `gh`'s `--json <fields>` flag already does this; pipe `glab ... --output json` through `jq`, e.g.:
+
+  ```bash
+  glab issue list --assignee @me --output json \
+    | jq -c 'map({iid, title, web_url, labels, description})'
+  ```
+
+  Keep the issue body (`description`/`body`) IN FULL — Step 2's effort scoring needs the whole body (file-path token count, >1500-char rule). The noise being cut is the rest of the payload (author/assignee objects, timestamps, counters), not the body. In Step 3.5, fetch a picked issue's body via `glab issue view <id> --output json | jq -r '.description'` / `gh issue view <id> --json body --jq '.body'`.
+- **Suppress incidental output.** Append `>/dev/null` to commands whose stdout is irrelevant (push progress, worktree-add chatter). Never suppress stderr.
+- **No play-by-play narration.** Don't print "Now fetching…", "Running git log…" between calls. Report only each step's *conclusion* (e.g. the resolved integration branch, the filtered queue) in the formats the steps below define.
+
 ## Input
 
 `$ARGUMENTS`:
@@ -89,7 +106,7 @@ glab issue list --assignee @me --output json
 gh issue list --assignee @me --json number,title,url,labels,body
 ```
 
-Parse the JSON. Capture `id/number`, `title`, `url`, `labels`, and the first 200 chars of `body` per issue.
+Parse the JSON (field-filtered per the Quiet execution section). Capture `id/number`, `title`, `url`, `labels`, and the **full** `body` per issue — the effort scoring below needs the whole body. Only ever *display* the first ~200 chars (picker descriptions, overviews).
 
 **Filter out** any issue whose `labels` array contains the `labels.doneInStaging` value from `.agent-teamflow` (default `done-in-staging`). Those are waiting for the staging→main flow and have no remaining work.
 
@@ -107,7 +124,7 @@ Drop any issue whose id is in `in_flight_ids`.
 
 Sort remaining issues by id ascending. If the filtered list is empty: tell the user and stop.
 
-**Compute effort tier per issue.** For each remaining issue, derive a score from the title and first 200 chars of body — no extra API call needed.
+**Compute effort tier per issue.** For each remaining issue, derive a score from the title and full body — no extra API call needed.
 
 Scoring (apply all rules, sum the points):
 
@@ -155,17 +172,17 @@ If the user picks 0: stop, no-op.
 
 ### Step 3.5. Confirm effort and assign model per issue
 
-For each picked issue, fetch the full body if not already available:
+For each picked issue, fetch the full body if not already available (only ids passed via `$ARGUMENTS` skip Step 2 — queue picks already carry full bodies):
 
 ```bash
 # GitLab
-glab issue view <id> --output json
+glab issue view <id> --output json | jq '{iid, title, description, labels}'
 
 # GitHub
 gh issue view <id> --json number,title,body,labels
 ```
 
-Re-score using the full body (same rules as Step 2 — the Step 2 score used only the first 200 chars; the full body may shift the tier). Update `{ id, tier, score }` if changed.
+Score any just-fetched issue using the Step 2 rules; issues picked from the queue keep their Step 2 full-body score. Store `{ id, tier, score }` for each.
 
 Print a one-liner before spawning workers: e.g. `Effort tiers: #42 -> M (~30 min), #43 -> XS (~5 min)`
 
@@ -346,7 +363,7 @@ PRE_MERGE_HEAD=$(git rev-parse origin/<INTEGRATION_BRANCH>)
    4. Description: commit summary block, then a `## Linked issues` section with one `Closes #<id>` per verified id.
    5. Report ONLY the MR/PR URL.
 
-   Never push to <branches.main>. No emojis.
+   Never push to <branches.main>. Follow the Quiet execution rules: batch commands, -q flags, field-filtered tracker JSON. No emojis.
    ```
 
 #### 7d. (Optional) Post-merge checks
@@ -523,6 +540,7 @@ Queue:
 - **Implementation workers must not push, create MRs/PRs, or close issues.**
 - **Step 7 batch-merge in main thread, MR/PR step in ONE worker.**
 - **No emojis** anywhere.
+- **Quiet plumbing** — follow the "Quiet execution" section: one shell call per step, `-q` flags, field-filtered tracker JSON, no narration between calls. The user-facing surface is the questions + tables only.
 - **Worktree isolation is non-negotiable for implementation workers.**
 
 ## Error handling
