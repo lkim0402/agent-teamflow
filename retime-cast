@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Retime an asciinema v3 cast: compress spinner/wait noise, keep real content
+at natural pace, stretch pauses after interactive prompts and summary tables
+so viewers can read them.
+
+Usage: ./retime-cast <in.cast> <out.cast> [--spin 0.15] [--read 4.0]
+"""
+
+import argparse
+import json
+import re
+import sys
+
+ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]|\x1b\][^\x07]*\x07|\x1b[()][0-9A-B]|[\r\x07]")
+
+# Spinner/progress noise: animated glyphs, "Verbing…" status lines, token counters.
+SPINNER = re.compile(
+    r"[✳✶✻✽✢·]\s|\w+ing(…|\.\.\.)|thinking with high effort|esc to interrupt|tokens\)"
+)
+
+# Moments worth lingering on: interactive prompts and summary tables.
+READABLE = re.compile(
+    r"☐|❯ 1\.|Which issues|\(max 3\)|Queue overview|Pre-merge summary|Final summary"
+    r"|Merge all|Approve full cleanup|another batch|Sync staging|Post-merge checks"
+)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("infile")
+    ap.add_argument("outfile")
+    ap.add_argument("--spin", type=float, default=0.15, help="speed factor for spinner noise (default 0.15 = ~6.7x faster)")
+    ap.add_argument("--read", type=float, default=4.0, help="pause (s) after prompts/tables (default 4.0)")
+    ap.add_argument("--settle", type=float, default=0.5, help="gap (s) that marks the end of a render burst — the reading hold is placed there, not mid-draw (default 0.5)")
+    ap.add_argument("--normal", type=float, default=1.0, help="speed factor for everything else (default 1.0 = natural pace)")
+    ap.add_argument("--start-event", type=int, default=None, help="drop all events before this index (0-based)")
+    ap.add_argument("--end-event", type=int, default=None, help="drop all events after this index (inclusive)")
+    args = ap.parse_args()
+
+    lines = open(args.infile).read().splitlines()
+    head = json.loads(lines[0])
+    # The recording-time idle cap is re-applied by agg at render time, which would
+    # clamp the deliberate long holds this script inserts — drop it.
+    head.pop("idle_time_limit", None)
+    header = json.dumps(head, ensure_ascii=False)
+    events = [json.loads(l) for l in lines[1:] if l.strip()]
+
+    total_in = sum(e[0] for e in events)
+    if args.end_event is not None:
+        events = events[: args.end_event + 1]
+    if args.start_event is not None:
+        events = events[args.start_event :]
+        if events:
+            events[0][0] = 0.1  # don't carry the pre-trim wait into the opening frame
+    out, pending = [], False
+    for ev in events:
+        interval, kind, data = ev[0], ev[1], ev[2]
+        text = ANSI.sub(" ", data) if kind == "o" else ""
+        if pending:
+            if interval >= args.settle:
+                # Render burst is over — the screen is complete; hold it here.
+                interval = max(interval, args.read)
+                pending = False
+            else:
+                # Prompt/table still drawing (options pop in over several
+                # events): zip through so no half-drawn frame lingers.
+                interval *= args.spin
+        elif kind == "o" and SPINNER.search(text) and not READABLE.search(text):
+            interval *= args.spin
+        elif not READABLE.search(text):
+            interval *= args.normal
+        if kind == "o" and READABLE.search(text):
+            pending = True
+        # Nothing holds longer than the deliberate reading pause.
+        interval = min(interval, args.read)
+        out.append([round(interval, 6), kind, data])
+
+    total_out = sum(e[0] for e in out)
+    with open(args.outfile, "w") as f:
+        f.write(header + "\n")
+        for ev in out:
+            f.write(json.dumps(ev, ensure_ascii=False) + "\n")
+
+    print(f"in:  {total_in:6.1f}s  ({total_in/60:.1f} min)")
+    print(f"out: {total_out:6.1f}s  ({total_out/60:.1f} min)")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

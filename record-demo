@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# agent-teamflow record-demo
+# Records a terminal session with asciinema and renders it to a GIF for the README.
+#
+# Usage:
+#   ./record-demo <name>            Record a session, then render docs/images/<name>.gif
+#   ./record-demo --render <name>   Re-render the GIF from an existing cast (no recording)
+#
+# Workflow: run `./record-demo resolve-demo`, do your /resolve session normally,
+# press ctrl-d when done. The cast is saved to docs/demos/<name>.cast and the GIF
+# to docs/images/<name>.gif. Long agent waits are capped at 2s of idle time.
+
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+DEMOS_DIR="$REPO_DIR/docs/demos"
+IMAGES_DIR="$REPO_DIR/docs/images"
+
+# Render knobs (override via env): THEME=dracula FONT_SIZE=14 SPEED=2 ./record-demo --render resolve-demo
+THEME="${THEME:-monokai}"
+FONT_SIZE="${FONT_SIZE:-16}"
+SPEED="${SPEED:-1.25}"
+IDLE_LIMIT="${IDLE_LIMIT:-2}"
+# Nerd Font so statusline/powerline glyphs render instead of broken boxes.
+FONT_FAMILY="${FONT_FAMILY:-JetBrainsMono Nerd Font Mono,JetBrains Mono,Menlo}"
+# Redaction: git email -> dev@example.com, $HOME -> ~. Extra rules via
+# REDACT="old1=new1,old2=new2" (or bare "secret" -> "[redacted]"). REDACT=off skips all.
+# Tip: same-length replacements keep table alignment intact in the playback.
+REDACT="${REDACT:-}"
+
+usage() {
+    cat <<'USAGE'
+Usage: ./record-demo <name>
+       ./record-demo --render <name>
+
+Records a terminal session (asciinema) and renders it to a GIF (agg).
+
+  <name>             Base name for the output files, e.g. "resolve-demo".
+                     Cast  -> docs/demos/<name>.cast
+                     GIF   -> docs/images/<name>.gif
+  --render <name>    Skip recording; re-render the GIF from the existing cast.
+
+Env overrides: THEME (monokai), FONT_SIZE (16), SPEED (1.25), IDLE_LIMIT (2),
+               FONT_FAMILY (JetBrainsMono Nerd Font Mono,...)
+Redaction:     git user.email -> dev@example.com and $HOME -> ~ are scrubbed from
+               the cast before rendering. Add extras: REDACT="old=new,secret"
+               (bare strings become "[redacted]"). Disable: REDACT=off
+USAGE
+    exit 1
+}
+
+for tool in asciinema agg; do
+    command -v "$tool" >/dev/null 2>&1 || {
+        echo "error: $tool is not installed (brew install $tool)" >&2
+        exit 1
+    }
+done
+
+render_only=false
+case "${1:-}" in
+    --render) render_only=true; shift ;;
+    -h|--help|"") usage ;;
+esac
+
+name="${1:-}"
+[ -n "$name" ] || usage
+
+cast="$DEMOS_DIR/$name.cast"
+gif="$IMAGES_DIR/$name.gif"
+
+mkdir -p "$DEMOS_DIR" "$IMAGES_DIR"
+
+if ! $render_only; then
+    if [ -e "$cast" ]; then
+        read -r -p "$cast already exists. Overwrite? [y/N] " answer
+        case "$answer" in y|Y) rm -f "$cast" ;; *) echo "aborted"; exit 1 ;; esac
+    fi
+    echo "Recording — do your session, press ctrl-d when done."
+    asciinema rec --idle-time-limit "$IDLE_LIMIT" "$cast"
+fi
+
+[ -e "$cast" ] || { echo "error: $cast not found — record it first" >&2; exit 1; }
+
+# --- Redact secrets from the cast (it's plain JSON lines) before rendering ---
+if [ "$REDACT" != "off" ]; then
+    redacted=0
+    redact_literal() {
+        # Escape sed metacharacters in search + replacement, then replace globally.
+        local search escaped replacement
+        search="$1"
+        [ -n "$search" ] || return 0
+        escaped=$(printf '%s' "$search" | sed 's/[.[\*^$|]/\\&/g')
+        replacement=$(printf '%s' "$2" | sed 's/[\\&|]/\\&/g')
+        if grep -qF "$search" "$cast"; then
+            sed -i '' "s|$escaped|$replacement|g" "$cast"
+            echo "  redacted: $1 -> $2"
+            redacted=1
+        fi
+    }
+    email="$(git config --get user.email 2>/dev/null || true)"
+    redact_literal "$email" "dev@example.com"
+    redact_literal "$HOME" "~"
+    if [ -n "$REDACT" ]; then
+        IFS=',' read -ra extras <<<"$REDACT"
+        for extra in "${extras[@]}"; do
+            case "$extra" in
+                *=*) redact_literal "${extra%%=*}" "${extra#*=}" ;;
+                *)   redact_literal "$extra" "[redacted]" ;;
+            esac
+        done
+    fi
+    [ "$redacted" -eq 1 ] && echo "  (note: redaction is best-effort — skim the cast for anything split across output chunks)"
+fi
+
+# Normalize U+00A0 no-break spaces to regular spaces: same cell width, but some
+# fonts in agg's fallback chain draw NBSP as a visible glyph (a tree-like icon).
+LC_ALL=C sed -i '' 's/\xc2\xa0/ /g' "$cast"
+
+echo "Rendering $gif (theme=$THEME, font-size=$FONT_SIZE, speed=$SPEED) ..."
+# A retimed cast (no idle_time_limit in its header — see ./retime-cast) already
+# paces itself; disable agg's 5s default clamp so deliberate holds survive.
+idle_args=()
+head -1 "$cast" | grep -q idle_time_limit || idle_args=(--idle-time-limit 99)
+# ${arr[@]+...} guard: macOS bash 3.2 treats an empty array as unbound under set -u.
+agg --theme "$THEME" --font-size "$FONT_SIZE" --speed "$SPEED" \
+    --font-family "$FONT_FAMILY" ${idle_args[@]+"${idle_args[@]}"} "$cast" "$gif"
+
+echo
+echo "Done:"
+echo "  cast: ${cast#"$REPO_DIR"/}"
+echo "  gif:  ${gif#"$REPO_DIR"/}"
+echo
+echo "Embed in README.md:"
+echo "  <img src=\"docs/images/$name.gif\" alt=\"$name\" width=\"860\">"

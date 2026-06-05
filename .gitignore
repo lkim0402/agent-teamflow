@@ -1,3 +1,8 @@
 node_modules/
 .DS_Store
 *.log
+
+# Demo recordings stay local: casts are greppable plain text and redaction is
+# best-effort (ANSI-split tokens dodge it) — only the rendered GIF is public.
+docs/demos/
+docs/images/*.mp4
