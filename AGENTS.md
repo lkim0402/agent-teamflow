@@ -49,4 +49,15 @@ When you change a workflow's behavior (branch, issue, or merge logic), update bo
 2. **항상** `/home/user/workspace/llm-wiki/raw/devlog/agent-teamflow-*.md`를
    최신순 **최대 3개**(직전 세션들)를 읽어 결정 이유·디테일을 보강한다.
 
-작업 후엔 `/devlog`로 세션을 기록 → 위키 "다음"이 갱신돼 다음 세션이 이어받는다.
+작업 후엔 Claude Code에서 `/devlog`, Codex에서 `$devlog`로 세션을 기록한다. 위키 "다음"이 갱신돼 다음 세션이 이어받는다.
+
+## 도구 노트 (AI 에이전트 공용)
+
+- 이 repo의 코딩과 llm-wiki 기록은 Claude Code와 Codex 모두 수행할 수 있다.
+- **커밋 trailer는 지우지 말고 실제로 관여한 AI 도구를 정확히 남긴다.**
+  - Claude Code → `Co-Authored-By: Claude <noreply@anthropic.com>`
+  - Codex → `Co-authored-by: Codex <noreply@openai.com>`
+  - 여러 AI 도구가 실제로 관여했으면 각 trailer를 한 번씩 남기고 기존 trailer는 보존한다.
+- 커밋 메시지 본문에는 **무엇 + 왜**를 남긴다. 이유가 확인되지 않으면 기록 에이전트가 지어내지 않고 사용자에게 묻는다.
+- author/committer는 항상 `jaegookyou`로 유지한다. trailer는 AI 관여 표식일 뿐이다.
+- llm-wiki 반영은 Claude Code의 `/devlog` 또는 Codex의 `$devlog`를 사용한다. Codex를 코드 repo에서 열 때는 `codex --add-dir /home/user/workspace/llm-wiki`로 위키 쓰기 경로를 허용한다.
